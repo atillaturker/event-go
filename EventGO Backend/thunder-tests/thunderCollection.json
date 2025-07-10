@@ -1,0 +1,75 @@
+{
+  "client": "Thunder Client",
+  "collectionName": "EventGO API",
+  "dateExported": "2025-07-04T12:00:00.000Z",
+  "version": "1.1",
+  "folders": [],
+  "requests": [
+    {
+      "containerId": "",
+      "sortNum": 10000,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "colId": "eventgo-api",
+      "name": "Register User",
+      "url": "http://localhost:5000/api/auth/register",
+      "method": "POST",
+      "modified": "2025-07-04T12:00:00.000Z",
+      "created": "2025-07-04T12:00:00.000Z",
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"USER\"\n}",
+        "form": []
+      },
+      "tests": []
+    },
+    {
+      "containerId": "",
+      "sortNum": 20000,
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "colId": "eventgo-api",
+      "name": "Login User",
+      "url": "http://localhost:5000/api/auth/login",
+      "method": "POST",
+      "modified": "2025-07-04T12:00:00.000Z",
+      "created": "2025-07-04T12:00:00.000Z",
+      "body": {
+        "type": "json",
+        "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}",
+        "form": []
+      },
+      "tests": []
+    },
+    {
+      "containerId": "",
+      "sortNum": 30000,
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "Bearer YOUR_TOKEN_HERE"
+        }
+      ],
+      "colId": "eventgo-api",
+      "name": "Get Profile",
+      "url": "http://localhost:5000/api/auth/profile",
+      "method": "GET",
+      "modified": "2025-07-04T12:00:00.000Z",
+      "created": "2025-07-04T12:00:00.000Z",
+      "body": {
+        "type": "json",
+        "raw": "",
+        "form": []
+      },
+      "tests": []
+    }
+  ]
+}
