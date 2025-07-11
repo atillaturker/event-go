@@ -37,6 +37,24 @@ const WelcomeScreen = () => {
       title: "Food Festival",
       text: "Indulge in a culinary journey with delicious food and great company.",
     },
+    {
+      id: "4",
+      image: require("../assets/images/list1.png"),
+      title: "Food Festival",
+      text: "Indulge in a culinary journey with delicious food and great company.",
+    },
+    {
+      id: "5",
+      image: require("../assets/images/list2.png"),
+      title: "Music Concert",
+      text: "Join us for an unforgettable night of music and fun!",
+    },
+    {
+      id: "6",
+      image: require("../assets/images/list3.png"),
+      title: "Art Exhibition",
+      text: "Explore the beauty of art and creativity.",
+    },
   ];
 
   return (
@@ -58,7 +76,7 @@ const WelcomeScreen = () => {
             onPress={() => navigation.navigate("LoginScreen")}
             style={styles.signInButton}
           >
-            <CustomText fontWeight="600" style={styles.ButtonText}>
+            <CustomText fontWeight="800" style={styles.buttonText}>
               Sign In
             </CustomText>
           </TouchableOpacity>
@@ -66,7 +84,7 @@ const WelcomeScreen = () => {
             onPress={() => navigation.navigate("RegisterScreen")}
             style={styles.registerButton}
           >
-            <CustomText fontWeight="600" style={styles.ButtonText}>
+            <CustomText fontWeight="800" style={styles.buttonText}>
               Register
             </CustomText>
           </TouchableOpacity>
@@ -114,7 +132,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 15,
   },
-  ButtonText: {
+  buttonText: {
     fontSize: 16,
     color: "#0D1A12",
   },

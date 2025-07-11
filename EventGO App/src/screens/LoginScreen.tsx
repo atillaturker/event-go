@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import React, { useState } from "react";
+import React from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
   Alert,
@@ -14,8 +14,11 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { z } from "zod";
+import { useDispatch } from "react-redux";
 import CustomText from "../components/CustomText";
+import { useLoginMutation } from "../services/authApi";
+import { setCredentials } from "../store/authSlice";
+import { loginSchema, type LoginFormData } from "../types/auth";
 import type { RootStackParamList } from "../types/navigation";
 
 type LoginScreenNavigationProp = StackNavigationProp<
@@ -23,18 +26,12 @@ type LoginScreenNavigationProp = StackNavigationProp<
   "Login"
 >;
 
-const loginSchema = z.object({
-  email: z.string().min(1, "Email is required").email("Invalid email format"),
-  password: z
-    .string()
-    .min(1, "Password is required")
-    .min(6, "Password must be at least 6 characters"),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
-
 const LoginScreen = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
+  const dispatch = useDispatch();
+
+  const [login, { isLoading }] = useLoginMutation();
+
   const {
     control,
     handleSubmit,
@@ -46,37 +43,27 @@ const LoginScreen = () => {
       password: "",
     },
   });
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (data: LoginFormData) => {
-    setIsLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
+      const result = await login(data).unwrap();
 
-      const responseData = await response.json();
-      console.log("Response status:", responseData);
+      console.log("Login result:", result);
 
-      if (!response.ok) {
-        Alert.alert(
-          "Login Failed",
-          responseData.message || "Invalid credentials"
-        );
-        return;
-      }
+      // Store credentials in Redux store
+      dispatch(
+        setCredentials({
+          user: result.data.user,
+          token: result.data.token,
+        })
+      );
 
-      // Handle successful login
       Alert.alert("Success", "Login successful!");
-    } catch (error) {
-      console.error("Login error:", error);
-      Alert.alert("Error", "Network error. Please try again.");
-    } finally {
-      setIsLoading(false);
+      // Navigate to main app screen
+      // navigation.navigate("Dashboard");
+    } catch (err: any) {
+      console.error("Login error:", err);
+      Alert.alert("Login Failed", err.data?.error || "Invalid credentials");
     }
   };
 
@@ -88,7 +75,7 @@ const LoginScreen = () => {
   };
 
   const handleSignUp = () => {
-    navigation.navigate("Register");
+    navigation.navigate("RegisterScreen");
   };
 
   const handleGoBack = () => {
@@ -276,10 +263,10 @@ const styles = StyleSheet.create({
   },
   forgotPasswordText: {
     fontSize: 14,
-    color: "#7CB342",
+    color: "#38E078",
   },
   loginButton: {
-    backgroundColor: "#7CB342",
+    backgroundColor: "#38E078",
     borderRadius: 25,
     paddingVertical: 18,
     alignItems: "center",
@@ -303,6 +290,6 @@ const styles = StyleSheet.create({
   },
   signUpLink: {
     fontSize: 14,
-    color: "#7CB342",
+    color: "#38E078",
   },
 });

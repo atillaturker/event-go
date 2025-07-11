@@ -1,19 +1,34 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
+import { useSelector } from "react-redux";
+import LoadingView from "../components/LoadingView";
+import { useAuthInitialize } from "../hooks/useAuthInitalize";
 import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
+import UserScreen from "../screens/UserScreen";
 import WelcomeScreen from "../screens/WelcomeScreen";
+import { RootState } from "../store/reduxStore";
 
 const Stack = createStackNavigator();
 
 const RootNavigator = () => {
-  const isAuth = false; // Change this to use your auth state, e.g., from context or redux.
+  useAuthInitialize();
+  const isAuthenticated = useSelector(
+    (state: RootState) => state.auth.isAuthenticated
+  );
+  const isLoading = useSelector((state: RootState) => state.auth.isLoading);
+
+  if (isLoading) {
+    return <LoadingView />;
+  }
 
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {isAuth ? (
-          <></>
+        {isAuthenticated ? (
+          <>
+            <Stack.Screen name="UserScreen" component={UserScreen} />
+          </>
         ) : (
           <>
             <Stack.Screen name="WelcomeScreen" component={WelcomeScreen} />

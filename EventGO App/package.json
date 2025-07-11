@@ -30,7 +30,8 @@
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
     "react-redux": "^9.2.0",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "expo-secure-store": "~14.2.3"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

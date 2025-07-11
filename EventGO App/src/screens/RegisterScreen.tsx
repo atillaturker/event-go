@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigation } from "@react-navigation/native";
 import type { StackNavigationProp } from "@react-navigation/stack";
-import React, { useState } from "react";
+import React from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
   Alert,
@@ -14,38 +14,26 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { z } from "zod";
+import { useDispatch } from "react-redux";
 import CustomText from "../components/CustomText";
+import { useRegisterMutation } from "../services/authApi";
+import { setCredentials } from "../store/authSlice";
+import { registerSchema, type RegisterFormData } from "../types/auth";
 import type { RootStackParamList } from "../types/navigation";
+import { saveToken } from "../utils/secureStorage";
 
 type RegisterScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
   "Register"
 >;
 
-// Zod schema for form validation
-const registerSchema = z
-  .object({
-    fullName: z
-      .string()
-      .min(1, "Full name is required")
-      .min(2, "Full name must be at least 2 characters"),
-    email: z.string().min(1, "Email is required").email("Invalid email format"),
-    password: z
-      .string()
-      .min(1, "Password is required")
-      .min(6, "Password must be at least 6 characters"),
-    confirmPassword: z.string().min(1, "Confirm password is required"),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
-  });
-
-type RegisterFormData = z.infer<typeof registerSchema>;
-
 const RegisterScreen = () => {
   const navigation = useNavigation<RegisterScreenNavigationProp>();
+  const dispatch = useDispatch();
+
+  // RTK Query mutation hook
+  const [register, { isLoading }] = useRegisterMutation();
+
   const {
     control,
     handleSubmit,
@@ -53,56 +41,44 @@ const RegisterScreen = () => {
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      fullName: "",
+      username: "",
       email: "",
       password: "",
       confirmPassword: "",
     },
   });
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleRegister = async (data: RegisterFormData) => {
-    setIsLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          fullName: data.fullName,
-          email: data.email,
-          password: data.password,
-        }),
-      });
+      const { confirmPassword, ...registerData } = data;
 
-      const responseData = await response.json();
-      console.log("Response status:", responseData);
+      // Convert username to name for the API request
+      const requestData = {
+        ...registerData,
+        name: registerData.username,
+        role: "USER",
+      };
 
-      if (!response.ok) {
-        Alert.alert(
-          "Registration Failed",
-          responseData.message || "Failed to create account"
-        );
-        return;
-      }
+      const result = await register(requestData).unwrap();
 
-      // Handle successful registration
+      console.log("Registration successful:", result);
+
+      dispatch(
+        setCredentials({
+          token: result.data.token,
+          user: result.data.user,
+        })
+      );
+
+      saveToken(result.data.token);
+
       Alert.alert("Success", "Account created successfully!");
-      navigation.navigate("Login");
-    } catch (error) {
-      console.error("Registration error:", error);
-      Alert.alert("Error", "Network error. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    } catch (err: any) {
+      const errorMessage =
+        err?.data?.error || err?.message || "Failed to create account";
 
-  const handleLogin = () => {
-    navigation.navigate("Login");
-  };
-  const handleGoBack = () => {
-    navigation.goBack();
+      Alert.alert("Registration Failed", errorMessage);
+    }
   };
 
   return (
@@ -113,7 +89,10 @@ const RegisterScreen = () => {
       >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
           <CustomText fontWeight="600" style={styles.headerTitle}>
@@ -135,20 +114,21 @@ const RegisterScreen = () => {
             {/* Full Name Input */}
             <View style={styles.inputContainer}>
               <CustomText fontWeight="200" style={styles.errorText}>
-                {errors.fullName && errors.fullName.message}
+                {errors.username && errors.username.message}
               </CustomText>
               <Controller
                 control={control}
                 render={({ field: { onChange, value } }) => (
                   <TextInput
                     style={styles.input}
-                    placeholder="Enter your full name"
+                    placeholder="Enter your username"
                     placeholderTextColor="#9CA3AF"
                     value={value}
                     onChangeText={onChange}
+                    autoCapitalize="none"
                   />
                 )}
-                name="fullName"
+                name="username"
               />
             </View>
 
@@ -230,7 +210,9 @@ const RegisterScreen = () => {
               <CustomText style={styles.loginLinkText}>
                 Already have an account?{" "}
               </CustomText>
-              <TouchableOpacity onPress={handleLogin}>
+              <TouchableOpacity
+                onPress={() => navigation.navigate("LoginScreen")}
+              >
                 <CustomText style={styles.loginLinkBold}>Log In</CustomText>
               </TouchableOpacity>
             </View>

@@ -17,38 +17,14 @@ const prisma = new PrismaClient();
 export const register: RequestHandler = async (req, res) => {
   try {
     // Take user data from request body
-    const { name, email, password, role }: User = req.body;
+    const { name, email, password, role = "USER" }: User = req.body;
+
+    console.log("Request body:", req.body);
 
     // Validation
     if (!name || !email || !password || !role) {
       res.status(400).json({
         error: "Undefined fields. Name, email, password and role are required.",
-      });
-      return;
-    }
-
-    // Role validation
-    const validRoles = ["USER", "ORGANIZER"];
-    if (!validRoles.includes(role)) {
-      res.status(400).json({
-        error: "Invalid role. Role must be USER or ORGANIZER.",
-      });
-      return;
-    }
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      res.status(400).json({
-        error: "Invalid email format.",
-      });
-      return;
-    }
-
-    // Password validation
-    if (password.length < 6) {
-      res.status(400).json({
-        error: "Password must be at least 6 characters long.",
       });
       return;
     }
@@ -60,13 +36,19 @@ export const register: RequestHandler = async (req, res) => {
 
     if (existingUser) {
       res.status(400).json({
-        error: "This email is already registered.",
+        success: false,
+        error:
+          "This email is already registered. Please use a different email.",
       });
       return;
     }
 
     // Hash the user password
+    console.log("Register - Original password:", password);
+    console.log("Register - Password length:", password.length);
+
     const hashedPassword = await bcrypt.hash(password, 10);
+    console.log("Register - Hashed password:", hashedPassword);
 
     // Create new user in the database
 
@@ -82,11 +64,13 @@ export const register: RequestHandler = async (req, res) => {
     const { password: _, ...userWithoutPassword } = newUser;
 
     // Create JWT token
-    const token = generateToken({
+    const token = await generateToken({
       _id: newUser.id,
       email: newUser.email,
       role: newUser.role,
     });
+
+    console.log("Token:", token);
 
     res.status(201).json({
       success: true,
@@ -106,7 +90,6 @@ export const login: RequestHandler = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validation
     if (!email || !password) {
       res.status(400).json({
         error: "Email and password fields are required",
@@ -114,33 +97,38 @@ export const login: RequestHandler = async (req, res) => {
       return;
     }
 
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      res.status(400).json({
-        error: "Invalid email format.",
-      });
-      return;
-    }
-
-    // Find user by email
     const user = await prisma.user.findUnique({
       where: { email },
     });
 
     if (!user) {
       res.status(401).json({
-        error: "Invalid email or password",
+        error: "User not found. Please check your email or register.",
       });
       return;
     }
 
-    // Check hashed password
+    // Check hashed password - Debug için log ekleyelim
+    console.log("Login attempt:");
+    console.log("Input password:", password);
+    console.log("Input password type:", typeof password);
+    console.log("Input password JSON:", JSON.stringify(password));
+    console.log("Stored hashed password:", user.password);
+    console.log("Stored password type:", typeof user.password);
+    console.log("Password length:", password.length);
+
+    // Test aynı şifreyi hash'leyip karşılaştırma
+    const testHash = await bcrypt.hash(password, 10);
+    console.log("Fresh hash of input password:", testHash);
+    const testCompare = await bcrypt.compare(password, testHash);
+    console.log("Fresh hash comparison result:", testCompare);
+
     const isValidPassword = await bcrypt.compare(password, user.password);
+    console.log("Password comparison result:", isValidPassword);
 
     if (!isValidPassword) {
       res.status(401).json({
-        error: "Invalid email or password",
+        error: "Invalid password. Please try again.",
       });
       return;
     }
