@@ -10,7 +10,7 @@ import {
 export const authApi = createApi({
   reducerPath: "authApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:5000/api/auth/",
+    baseUrl: `${process.env.EXPO_PUBLIC_API_URL}/api/auth/`,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).auth.token;
       if (token) {

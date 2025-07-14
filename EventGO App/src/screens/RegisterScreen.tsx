@@ -61,8 +61,6 @@ const RegisterScreen = () => {
 
       const result = await register(requestData).unwrap();
 
-      console.log("Registration successful:", result);
-
       dispatch(
         setCredentials({
           token: result.data.token,

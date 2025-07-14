@@ -19,6 +19,29 @@ enum Role {
   ORGANIZER
 }
 
+enum EventCategory {
+  CONCERT
+  SPORTS
+  PERFORMING_ARTS
+  TECHNOLOGY
+  EDUCATION
+  FOOD_DRINK
+  ART
+  OTHER
+}
+
+enum EventStatus {
+  ACTIVE
+  CANCELLED
+  COMPLETED
+}
+
+type Location {
+  latitude  Float
+  longitude Float
+  address   String
+}
+
 model User {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   name      String
@@ -27,4 +50,30 @@ model User {
   role      Role     @default(USER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  // Relations
+  organizedEvents Event[] @relation("EventOrganizer")
+  attendedEvents  Event[] @relation("EventAttendees", fields: [attendedEventIds], references: [id])
+  attendedEventIds String[] @db.ObjectId
+}
+
+model Event {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  description   String
+  date          DateTime
+  location      Location
+  category      EventCategory
+  capacity      Int
+  status        EventStatus   @default(ACTIVE)
+  imageUrl      String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  
+  // Relations
+  organizerId   String        @db.ObjectId
+  organizer     User          @relation("EventOrganizer", fields: [organizerId], references: [id])
+  
+  attendees     User[]        @relation("EventAttendees", fields: [attendeeIds], references: [id])
+  attendeeIds   String[]      @db.ObjectId
 }

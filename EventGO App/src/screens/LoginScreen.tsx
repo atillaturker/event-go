@@ -20,6 +20,7 @@ import { useLoginMutation } from "../services/authApi";
 import { setCredentials } from "../store/authSlice";
 import { loginSchema, type LoginFormData } from "../types/auth";
 import type { RootStackParamList } from "../types/navigation";
+import { saveToken } from "../utils/secureStorage";
 
 type LoginScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -48,8 +49,6 @@ const LoginScreen = () => {
     try {
       const result = await login(data).unwrap();
 
-      console.log("Login result:", result);
-
       // Store credentials in Redux store
       dispatch(
         setCredentials({
@@ -58,11 +57,14 @@ const LoginScreen = () => {
         })
       );
 
+      // Save token to secure storage
+
+      await saveToken(result.data.token);
+
       Alert.alert("Success", "Login successful!");
       // Navigate to main app screen
       // navigation.navigate("Dashboard");
     } catch (err: any) {
-      console.error("Login error:", err);
       Alert.alert("Login Failed", err.data?.error || "Invalid credentials");
     }
   };
@@ -146,6 +148,7 @@ const LoginScreen = () => {
                     value={value}
                     onChangeText={onChange}
                     secureTextEntry
+                    autoCapitalize="none"
                   />
                 )}
                 name="password"

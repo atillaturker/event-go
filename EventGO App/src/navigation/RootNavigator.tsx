@@ -5,9 +5,9 @@ import LoadingView from "../components/LoadingView";
 import { useAuthInitialize } from "../hooks/useAuthInitalize";
 import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
-import UserScreen from "../screens/UserScreen";
 import WelcomeScreen from "../screens/WelcomeScreen";
 import { RootState } from "../store/reduxStore";
+import { TabNavigator } from "./TabNavigator";
 
 const Stack = createStackNavigator();
 
@@ -27,7 +27,7 @@ const RootNavigator = () => {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
           <>
-            <Stack.Screen name="UserScreen" component={UserScreen} />
+            <Stack.Screen name="bottomTab" component={TabNavigator} />
           </>
         ) : (
           <>
