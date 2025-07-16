@@ -45,8 +45,8 @@ export interface CreateEventRequest {
   description: string;
   date: string;
   location: Location;
-  category: EventCategory;
-  capacity: number;
+  category: EventCategory | "";
+  capacity: number | null;
   imageUrl?: string;
 }
 

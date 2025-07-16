@@ -29,24 +29,41 @@ export interface Event {
   location: Location;
   category: EventCategory;
   capacity: number; // maksimum kişi sayısı
-  attendeeCount: number; // şu anda katılan kişi sayısı (computed field)
-  organizerId: string; // organizatör kullanıcı id
-  organizerName: string; // (computed field - organizer.name'den gelir)
-  imageUrl?: string; // opsiyonel kapak fotoğrafı
   status: EventStatus;
+  imageUrl?: string; // opsiyonel kapak fotoğrafı
   createdAt: string;
   updatedAt: string;
+
+  // Relations (Prisma'dan gelen)
+  organizerId: string; // organizatör kullanıcı id
+  organizer?: {
+    // Prisma relation
+    id: string;
+    name: string;
+    email?: string;
+  };
+  attendees?: {
+    // Prisma relation
+    id: string;
+    name: string;
+  }[];
+  attendeeIds: string[]; // Prisma array field
+
+  // Computed fields (API response'da hesaplanır)
+  attendeeCount?: number; // attendees.length'den hesaplanır
+  organizerName?: string; // organizer.name'den gelir
+  isAttending?: boolean; // kullanıcının bu event'e katılıp katılmadığı
 }
 
 // API Request/Response types
 export interface CreateEventRequest {
   title: string;
   description: string;
-  date: string;
+  date: string | Date;
   location: Location;
   category: EventCategory;
   capacity: number;
-  imageUrl?: string;
+  imageUrl?: string | null;
 }
 
 export interface UpdateEventRequest {

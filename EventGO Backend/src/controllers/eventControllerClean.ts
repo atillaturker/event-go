@@ -4,8 +4,19 @@ import { EventCategory, EventResponse, EventStatus } from "../types/eventType";
 
 const prisma = new PrismaClient();
 
-// Tüm eventleri listele
-export const getEvents = async (req: Request, res: Response): Promise<void> => {
+interface AuthenticatedRequest extends Request {
+  user?: {
+    id: string;
+    email: string;
+    role: string;
+  };
+}
+
+// List all events
+export const getEvents = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
   try {
     const { category, status, search, limit = 20, offset = 0 } = req.query;
 
@@ -71,7 +82,7 @@ export const getEvents = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-// Tek event detayı
+// Detail of a single event
 export const getEventById = async (
   req: Request,
   res: Response
@@ -118,5 +129,97 @@ export const getEventById = async (
   } catch (error) {
     console.error("Error fetching event:", error);
     res.status(500).json({ error: "Failed to fetch event" });
+  }
+};
+
+export const createEvent = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const user = req.user;
+
+    if (!user || user.role !== "ORGANIZER") {
+      res.status(403).json({
+        error: "Only organizers can create events",
+      });
+      return;
+    }
+
+    // Validate required fields
+    const { title, description, date, location, category, capacity, imageUrl } =
+      req.body;
+
+    if (
+      !title ||
+      !description ||
+      !date ||
+      !location ||
+      !category ||
+      !capacity
+    ) {
+      res.status(400).json({
+        error:
+          "Missing required fields: title, description, date, location, category, capacity",
+      });
+      return;
+    }
+
+    // Create event data matching Prisma Event model
+    const eventData = {
+      title: title,
+      description: description,
+      date: new Date(date), // Convert string to DateTime
+      location: location, // Location type object
+      category: category as EventCategory,
+      capacity: parseInt(capacity),
+      organizerId: user.id, // Foreign key to User
+      status: EventStatus.ACTIVE, // Default status from schema
+      imageUrl: imageUrl || null, // Optional field
+      attendeeIds: [], // Empty array initially
+    };
+
+    const newEvent = await prisma.event.create({
+      data: eventData,
+      include: {
+        organizer: {
+          select: { id: true, name: true, email: true },
+        },
+        attendees: {
+          select: { id: true, name: true },
+        },
+      },
+    });
+
+    // Create response matching EventResponse interface
+    const eventResponse: EventResponse = {
+      id: newEvent.id,
+      title: newEvent.title,
+      description: newEvent.description,
+      date: newEvent.date.toISOString(),
+      location: newEvent.location,
+      category: newEvent.category as EventCategory,
+      capacity: newEvent.capacity,
+      attendeeCount: newEvent.attendees.length,
+      organizerId: newEvent.organizerId,
+      organizerName: newEvent.organizer.name,
+      imageUrl: newEvent.imageUrl,
+      status: newEvent.status as EventStatus,
+      createdAt: newEvent.createdAt.toISOString(),
+      updatedAt: newEvent.updatedAt.toISOString(),
+      isAttending: false,
+    };
+
+    res.status(201).json({
+      success: true,
+      message: "Event created successfully",
+      event: eventResponse,
+    });
+  } catch (error) {
+    console.error("Error creating event:", error);
+    res.status(500).json({
+      error: "Failed to create event",
+      details: process.env.NODE_ENV === "development" ? error : {},
+    });
   }
 };

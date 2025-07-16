@@ -22,7 +22,6 @@ export const eventsApi = createApi({
   }),
   tagTypes: ["Event"],
   endpoints: (builder) => ({
-    // Tüm eventleri getir
     getEvents: builder.query<
       EventsResponse,
       {

@@ -21,7 +21,6 @@ const EventsScreen = () => {
     ""
   );
 
-  // Kategori isimlerini formatla (sadece baş harfleri büyük)
   const getCategoryDisplayName = (category: string): string => {
     if (category === "All") return "All";
 
@@ -33,7 +32,6 @@ const EventsScreen = () => {
       .join(" ");
   };
 
-  // API'den eventleri çek
   const queryParams: any = {
     search: searchText,
     limit: 20,

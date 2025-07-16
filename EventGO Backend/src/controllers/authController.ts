@@ -6,7 +6,7 @@ import { generateToken } from "../utils/generateToken";
 
 interface AuthenticatedRequest extends Request {
   user?: {
-    userId: string;
+    id: string;
     email: string;
     role: string;
   };
@@ -18,9 +18,6 @@ export const register: RequestHandler = async (req, res) => {
   try {
     // Take user data from request body
     const { name, email, password, role = "USER" }: User = req.body;
-
-    console.log("Request body:", req.body);
-
     // Validation
     if (!name || !email || !password || !role) {
       res.status(400).json({
@@ -43,12 +40,9 @@ export const register: RequestHandler = async (req, res) => {
       return;
     }
 
-    // Hash the user password
-    console.log("Register - Original password:", password);
-    console.log("Register - Password length:", password.length);
+    // Hash the password
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    console.log("Register - Hashed password:", hashedPassword);
 
     // Create new user in the database
 
@@ -69,9 +63,6 @@ export const register: RequestHandler = async (req, res) => {
       email: newUser.email,
       role: newUser.role,
     });
-
-    console.log("Token:", token);
-
     res.status(201).json({
       success: true,
       message: "User registered successfully",
@@ -108,23 +99,7 @@ export const login: RequestHandler = async (req, res) => {
       return;
     }
 
-    // Check hashed password - Debug için log ekleyelim
-    console.log("Login attempt:");
-    console.log("Input password:", password);
-    console.log("Input password type:", typeof password);
-    console.log("Input password JSON:", JSON.stringify(password));
-    console.log("Stored hashed password:", user.password);
-    console.log("Stored password type:", typeof user.password);
-    console.log("Password length:", password.length);
-
-    // Test aynı şifreyi hash'leyip karşılaştırma
-    const testHash = await bcrypt.hash(password, 10);
-    console.log("Fresh hash of input password:", testHash);
-    const testCompare = await bcrypt.compare(password, testHash);
-    console.log("Fresh hash comparison result:", testCompare);
-
     const isValidPassword = await bcrypt.compare(password, user.password);
-    console.log("Password comparison result:", isValidPassword);
 
     if (!isValidPassword) {
       res.status(401).json({
@@ -159,10 +134,10 @@ export const login: RequestHandler = async (req, res) => {
 
 export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
 
     if (!userId) {
-      res.status(401).json({ error: "Unauthorized" });
+      res.status(401).json({ success: false, message: "Unauthorized access" });
       return;
     }
 

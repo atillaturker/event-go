@@ -15,6 +15,7 @@ export const useAuthInitialize = () => {
     const loadTokenToRedux = async () => {
       try {
         const storedToken = await getToken();
+        console.log("Loaded token:", storedToken);
         if (storedToken) {
           dispatch(setCredentials({ token: storedToken }));
           setShouldFetchProfile(true);

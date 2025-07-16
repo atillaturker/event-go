@@ -16,7 +16,7 @@ export const generateToken = (user: {
   try {
     const token = jwt.sign(
       {
-        userId: user._id,
+        id: user._id,
         email: user.email,
         role: user.role,
       },

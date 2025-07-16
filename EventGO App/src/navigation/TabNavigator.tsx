@@ -1,31 +1,44 @@
 import { Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { useSelector } from "react-redux";
+import CreateEventScreen from "../screens/CreateEventScreen";
 import EventsScreen from "../screens/EventsScreen";
+import TestScreen from "../screens/TestScreen";
 import UserScreen from "../screens/UserScreen";
+import { RootState } from "../store/reduxStore";
 
 const Tab = createBottomTabNavigator();
 
 export const TabNavigator = () => {
+  const user = useSelector((state: RootState) => state.auth.user);
+  const isOrganizer = user?.role === "ORGANIZER";
+
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
+      screenOptions={({ route }: { route: any }) => ({
+        tabBarIcon: ({
+          focused,
+          color,
+        }: {
+          focused: boolean;
+          color: string;
+        }) => {
           let iconName: keyof typeof Ionicons.glyphMap;
           switch (route.name) {
-            case "Home":
-              iconName = focused ? "home" : "home-outline";
-              break;
             case "Events":
               iconName = focused ? "calendar" : "calendar-outline";
               break;
-            case "Search":
-              iconName = focused ? "search" : "search-outline";
+            case "Create":
+              iconName = focused ? "add-circle" : "add-circle-outline";
+              break;
+            case "MyEvents":
+              iconName = focused ? "list" : "list-outline";
               break;
             case "Profile":
               iconName = focused ? "person" : "person-outline";
               break;
             default:
-              iconName = "home-outline";
+              iconName = "calendar-outline";
           }
 
           return <Ionicons name={iconName} size={26} color={color} />;
@@ -42,8 +55,41 @@ export const TabNavigator = () => {
         headerShown: false,
       })}
     >
-      <Tab.Screen name="Events" component={EventsScreen} />
-      <Tab.Screen name="Profile" component={UserScreen} />
+      <Tab.Screen
+        name="Events"
+        component={EventsScreen}
+        options={{
+          tabBarLabel: "Events",
+        }}
+      />
+
+      {isOrganizer && (
+        <>
+          <Tab.Screen
+            name="Create"
+            component={CreateEventScreen}
+            options={{
+              tabBarLabel: "Create Event",
+            }}
+          />
+
+          <Tab.Screen
+            name="Test"
+            component={TestScreen}
+            options={{
+              tabBarLabel: "Test",
+            }}
+          />
+        </>
+      )}
+
+      <Tab.Screen
+        name="Profile"
+        component={UserScreen}
+        options={{
+          tabBarLabel: "Profile",
+        }}
+      />
     </Tab.Navigator>
   );
 };
