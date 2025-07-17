@@ -123,6 +123,7 @@ const CreateEventScreen = () => {
         imageUrl: "",
       });
       setSelectedDate(new Date());
+      navigation.goBack();
     } catch (error: any) {
       console.error("Create event error:", error);
       Alert.alert("Error", error?.data?.error || "Failed to create event");

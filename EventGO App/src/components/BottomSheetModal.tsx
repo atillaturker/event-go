@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
 import Modal from "react-native-modal";
+import CustomText from "./CustomText";
 
 interface BottomSheetModalProps {
   visible: boolean;
@@ -33,7 +34,9 @@ const BottomSheetModal: React.FC<BottomSheetModalProps> = ({
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.titleRow}>
-            <Text style={styles.title}>{title}</Text>
+            <CustomText fontWeight="700" style={styles.title}>
+              {title}
+            </CustomText>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color="#666" />
             </TouchableOpacity>
@@ -80,8 +83,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   title: {
-    fontSize: 20,
-    fontWeight: "600",
+    fontSize: 22,
     color: "#000",
     flex: 1,
     textAlign: "center",

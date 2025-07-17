@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useGetProfileQuery } from "../services/authApi";
-import { setCredentials, setLoading } from "../store/authSlice";
+import { logout, setCredentials, setLoading } from "../store/authSlice";
 import { RootState } from "../store/reduxStore";
 import { getToken } from "../utils/secureStorage";
 
@@ -46,9 +46,9 @@ export const useAuthInitialize = () => {
       setShouldFetchProfile(false);
     }
     if (error) {
-      console.error("Error fetching profile:", error);
       dispatch(setLoading(false));
       setShouldFetchProfile(false);
+      dispatch(logout());
     }
   }, [profileData, error, dispatch, token]);
 
