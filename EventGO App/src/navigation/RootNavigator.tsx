@@ -1,8 +1,10 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { useSelector } from "react-redux";
+import EventDetailScreen from "../components/EventDetailScreen";
 import LoadingView from "../components/LoadingView";
 import { useAuthInitialize } from "../hooks/useAuthInitalize";
+import EventRequestScreen from "../screens/EventRequest";
 import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
 import WelcomeScreen from "../screens/WelcomeScreen";
@@ -28,6 +30,14 @@ const RootNavigator = () => {
         {isAuthenticated ? (
           <>
             <Stack.Screen name="bottomTab" component={TabNavigator} />
+            <Stack.Screen
+              name="EventDetailScreen"
+              component={EventDetailScreen}
+            />
+            <Stack.Screen
+              name="EventRequestsScreen"
+              component={EventRequestScreen}
+            />
           </>
         ) : (
           <>

@@ -123,7 +123,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
         selectedLocation.longitude
       );
     } else {
-      Alert.alert("Error", "Please select a lcoation on the map");
+      Alert.alert("Error", "Please select a location on the map");
     }
   };
 

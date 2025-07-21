@@ -25,18 +25,18 @@ export interface Event {
   id: string;
   title: string;
   description: string;
-  date: string; // ISO tarih: ör: "2025-07-01T18:30:00Z"
+  date: string; // ISO date format: e.g. "2025-07-01T18:30:00Z"
   location: Location;
   category: EventCategory;
-  capacity: number; // maksimum kişi sayısı
-  attendeeCount: number; // şu anda katılan kişi sayısı
-  organizerId: string; // organizatör kullanıcı id
+  capacity: number; // maximum number of attendees
+  attendeeCount: number; // current number of attendees
+  organizerId: string; // organizer user id
   organizerName: string; // organizer name
-  imageUrl?: string | null; // opsiyonel kapak fotoğrafı
+  imageUrl?: string | null; // optional cover image
   status: EventStatus;
   createdAt: string;
   updatedAt: string;
-  isAttending?: boolean; // kullanıcının bu event'e katılıp katılmadığı
+  isAttending?: boolean; // whether the user is attending this event
 }
 
 // API Request types

@@ -1,6 +1,7 @@
 ### EventGO API Test Collection
 ### Variables
 @baseUrl = http://localhost:5000/api/auth
+@eventsUrl = http://localhost:5000/api/events
 @token = 
 
 ### 1. Register User
@@ -37,3 +38,79 @@ Content-Type: application/json
   "password": "securepass",
   "role": "ADMIN"
 }
+
+### 4. Register Organizer User
+POST {{baseUrl}}/register
+Content-Type: application/json
+
+{
+  "name": "Event Organizer",
+  "email": "organizer@example.com",
+  "password": "password123",
+  "role": "ORGANIZER"
+}
+
+### 5. Login Organizer
+POST {{baseUrl}}/login
+Content-Type: application/json
+
+{
+  "email": "organizer@example.com",
+  "password": "password123"
+}
+
+### 6. Create Event (Token gerekli - Organizer)
+POST {{eventsUrl}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Tech Conference 2025",
+  "description": "Annual technology conference with latest trends",
+  "date": "2025-08-15T10:00:00.000Z",
+  "location": "Istanbul Convention Center",
+  "category": "TECHNOLOGY",
+  "capacity": 500,
+  "imageUrl": "https://example.com/tech-conference.jpg"
+}
+
+### 7. Create Another Event
+POST {{eventsUrl}}
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Music Festival",
+  "description": "Summer music festival with multiple artists",
+  "date": "2025-09-20T18:00:00.000Z",
+  "location": "Maçka Park",
+  "category": "ENTERTAINMENT",
+  "capacity": 1000,
+  "imageUrl": "https://example.com/music-festival.jpg"
+}
+
+### 8. Get My Events - Temel Test
+GET {{eventsUrl}}/my-events
+Authorization: Bearer {{token}}
+
+### 9. Get My Events - Status Filtresi
+GET {{eventsUrl}}/my-events?status=ACTIVE
+Authorization: Bearer {{token}}
+
+### 10. Get My Events - Arama
+GET {{eventsUrl}}/my-events?search=tech
+Authorization: Bearer {{token}}
+
+### 11. Get My Events - Pagination
+GET {{eventsUrl}}/my-events?limit=1&offset=0
+Authorization: Bearer {{token}}
+
+### 12. Get My Events - Kombine Filtre
+GET {{eventsUrl}}/my-events?status=ACTIVE&search=music&limit=10&offset=0
+Authorization: Bearer {{token}}
+
+### 13. Get All Events (Public)
+GET {{eventsUrl}}
+
+### 14. Test Unauthorized Access (Token olmadan)
+GET {{eventsUrl}}/my-events

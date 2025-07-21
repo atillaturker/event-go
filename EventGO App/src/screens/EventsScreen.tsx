@@ -1,40 +1,34 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
+import CustomText from "../components/CustomText";
+import EventCard from "../components/EventCard";
 import { useGetEventsQuery } from "../services/eventsApi";
-import { EventCategory } from "../types/events";
+import { Event, EventCategory, EventStatus } from "../types/events";
+import { getCategoryDisplayName } from "../utils/categoryDisplay";
+import { formatDate } from "../utils/formatDate";
 
 const EventsScreen = () => {
   const [searchText, setSearchText] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<EventCategory | "">(
     ""
   );
-
-  const getCategoryDisplayName = (category: string): string => {
-    if (category === "All") return "All";
-
-    // Enum değerlerini düzgün formata çevir
-    return category
-      .toLowerCase()
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-  };
+  const navigation = useNavigation();
 
   const queryParams: any = {
     search: searchText,
     limit: 20,
+    status: `${EventStatus.ACTIVE},${EventStatus.CANCELLED},${EventStatus.COMPLETED}`,
   };
 
   if (selectedCategory) {
@@ -50,7 +44,9 @@ const EventsScreen = () => {
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading events...</Text>
+          <CustomText fontWeight="600" style={styles.loadingText}>
+            Loading events...
+          </CustomText>
         </View>
       </SafeAreaView>
     );
@@ -60,14 +56,18 @@ const EventsScreen = () => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.errorText}>Error loading events</Text>
+          <CustomText fontWeight="600" style={styles.errorText}>
+            Error loading events
+          </CustomText>
           <TouchableOpacity
             style={styles.retryButton}
             onPress={() => {
               // Retry logic
             }}
           >
-            <Text style={styles.retryButtonText}>Try Again</Text>
+            <CustomText fontWeight="600" style={styles.retryButtonText}>
+              Try Again
+            </CustomText>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -75,10 +75,7 @@ const EventsScreen = () => {
   }
 
   const events = eventsData?.events || [];
-  const featuredEvent = events[0]; // İlk eventi featured olarak göster
-  const upcomingEvents = events.slice(1); // Geri kalanları upcoming olarak göster
 
-  // Harita bölgesini hesapla
   const getMapRegion = () => {
     if (events.length === 0) {
       return {
@@ -108,16 +105,8 @@ const EventsScreen = () => {
     };
   };
 
-  // Format date
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const handleEventPress = (event: Event) => {
+    navigation.navigate("EventDetailScreen", { eventId: event.id });
   };
 
   return (
@@ -125,7 +114,9 @@ const EventsScreen = () => {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Events</Text>
+          <CustomText fontWeight="800" style={styles.headerTitle}>
+            Events
+          </CustomText>
           <TouchableOpacity style={styles.filterButton}>
             <Ionicons name="options" size={24} color="#000" />
           </TouchableOpacity>
@@ -149,9 +140,9 @@ const EventsScreen = () => {
             ))}
           </MapView>
           <View style={styles.mapOverlay}>
-            <Text style={styles.mapTitle}>
+            <CustomText fontWeight="800" style={styles.mapTitle}>
               {events.length > 0 ? `${events.length} Events` : "No Events"}
-            </Text>
+            </CustomText>
           </View>
         </View>
 
@@ -192,67 +183,30 @@ const EventsScreen = () => {
                 )
               }
             >
-              <Text
+              <CustomText
+                fontWeight="600"
                 style={[
                   styles.categoryText,
                   selectedCategory === category && styles.categoryTextActive,
                 ]}
               >
                 {getCategoryDisplayName(category)}
-              </Text>
+              </CustomText>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
-        {/* Featured Event */}
-        {featuredEvent && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Featured</Text>
-            <TouchableOpacity style={styles.featuredEvent}>
-              <View style={styles.featuredEventContent}>
-                <Text style={styles.featuredEventTitle}>
-                  {featuredEvent.title}
-                </Text>
-                <Text style={styles.featuredEventDate}>
-                  {formatDate(featuredEvent.date)}
-                </Text>
-                <Text style={styles.featuredEventLocation}>
-                  {featuredEvent.location.address}
-                </Text>
-              </View>
-              <Image
-                source={{
-                  uri:
-                    featuredEvent.imageUrl ||
-                    "https://via.placeholder.com/100x80/4682B4/FFFFFF?text=Event",
-                }}
-                style={styles.featuredEventImage}
-              />
-            </TouchableOpacity>
-          </View>
-        )}
-
         {/* Upcoming Events */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Upcoming Events</Text>
-          {upcomingEvents.map((event) => (
-            <TouchableOpacity key={event.id} style={styles.eventItem}>
-              <View style={styles.eventContent}>
-                <Text style={styles.eventTitle}>{event.title}</Text>
-                <Text style={styles.eventDate}>{formatDate(event.date)}</Text>
-                <Text style={styles.eventLocation}>
-                  {event.location.address}
-                </Text>
-              </View>
-              <Image
-                source={{
-                  uri:
-                    event.imageUrl ||
-                    "https://via.placeholder.com/80x60/4682B4/FFFFFF?text=Event",
-                }}
-                style={styles.eventImage}
-              />
-            </TouchableOpacity>
+          <CustomText fontWeight="800" style={styles.sectionTitle}>
+            Upcoming Events
+          </CustomText>
+          {events.map((event) => (
+            <EventCard
+              key={event.id}
+              event={event}
+              onPress={handleEventPress}
+            />
           ))}
         </View>
       </ScrollView>
@@ -274,14 +228,13 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: "bold",
     color: "#000",
   },
   filterButton: {
     padding: 8,
   },
   mapContainer: {
-    height: 200,
+    height: 275,
     marginHorizontal: 20,
     borderRadius: 16,
     overflow: "hidden",
@@ -299,7 +252,6 @@ const styles = StyleSheet.create({
   },
   mapTitle: {
     fontSize: 24,
-    fontWeight: "bold",
     color: "#000",
     textShadowColor: "rgba(255, 255, 255, 0.8)",
     textShadowOffset: { width: 0, height: 1 },
@@ -341,7 +293,6 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontSize: 14,
-    fontWeight: "500",
     color: "#666",
   },
   categoryTextActive: {
@@ -352,41 +303,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
+    fontSize: 21,
     color: "#000",
     marginBottom: 16,
-  },
-  featuredEvent: {
-    flexDirection: "row",
-    backgroundColor: "#F8F8F8",
-    borderRadius: 16,
-    padding: 16,
-    alignItems: "center",
-  },
-  featuredEventContent: {
-    flex: 1,
-  },
-  featuredEventTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#000",
-    marginBottom: 4,
-  },
-  featuredEventDate: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 2,
-  },
-  featuredEventLocation: {
-    fontSize: 12,
-    color: "#999",
-  },
-  featuredEventImage: {
-    width: 80,
-    height: 60,
-    borderRadius: 12,
-    marginLeft: 16,
   },
   eventItem: {
     flexDirection: "row",
@@ -400,7 +319,6 @@ const styles = StyleSheet.create({
   },
   eventTitle: {
     fontSize: 16,
-    fontWeight: "600",
     color: "#000",
     marginBottom: 4,
   },

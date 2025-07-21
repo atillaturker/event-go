@@ -20,13 +20,13 @@ export const authenticateToken = (
   const token = authHeader && authHeader.split(" ")[1];
 
   if (!token) {
-    res.status(401).json({ error: "Erişim token'ı gerekli" });
+    res.status(401).json({ error: "Authorization token is missing" });
     return;
   }
 
   jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
     if (err) {
-      res.status(403).json({ error: "Geçersiz token" });
+      res.status(403).json({ error: "Invalid token" });
       return;
     }
 

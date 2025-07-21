@@ -3,7 +3,8 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useSelector } from "react-redux";
 import CreateEventScreen from "../screens/CreateEventScreen";
 import EventsScreen from "../screens/EventsScreen";
-import TestScreen from "../screens/TestScreen";
+
+import MyEventsScreen from "../screens/MyEventsScreen";
 import UserScreen from "../screens/UserScreen";
 import { RootState } from "../store/reduxStore";
 
@@ -74,10 +75,10 @@ export const TabNavigator = () => {
           />
 
           <Tab.Screen
-            name="Test"
-            component={TestScreen}
+            name="MyEvents"
+            component={MyEventsScreen}
             options={{
-              tabBarLabel: "Test",
+              tabBarLabel: "Own Events",
             }}
           />
         </>

@@ -12,9 +12,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import CategorySelector from "../components/CategorySelector";
-import CustomText from "../components/CustomText";
 import DateTimeSelector from "../components/DateTimeSelector";
 import LocationSelector from "../components/LocationSelector";
+import ScreenHeader from "../components/ScreenHeader";
 import { useCreateEventMutation } from "../services/eventsApi";
 import { CreateEventRequest, EventCategory } from "../types/events";
 
@@ -132,20 +132,12 @@ const CreateEventScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        <CustomText style={styles.headerTitle} fontWeight="800">
-          Create Event
-        </CustomText>
-        <View style={styles.placeholder} />
-      </View>
-
+      <ScreenHeader
+        title="Create Event"
+        onBackPress={() => {
+          navigation.goBack();
+        }}
+      />
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}

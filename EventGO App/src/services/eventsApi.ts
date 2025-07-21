@@ -11,7 +11,7 @@ export const eventsApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: `${process.env.EXPO_PUBLIC_API_URL}/api/events/`,
     prepareHeaders: (headers, { getState }) => {
-      // Token'ı auth slice'dan al
+      // Get token from auth slice
       const token = (getState() as any).auth.token;
       if (token) {
         headers.set("authorization", `Bearer ${token}`);
@@ -46,13 +46,13 @@ export const eventsApi = createApi({
       providesTags: ["Event"],
     }),
 
-    // Tek event detayı
+    // Single event details
     getEventById: builder.query<Event, string>({
       query: (id) => id,
       providesTags: (result, error, id) => [{ type: "Event", id }],
     }),
 
-    // Yeni event oluştur (sadece organizer)
+    // Create new event (organizer only)
     createEvent: builder.mutation<Event, CreateEventRequest>({
       query: (eventData) => ({
         url: "",
@@ -62,7 +62,7 @@ export const eventsApi = createApi({
       invalidatesTags: ["Event"],
     }),
 
-    // Event güncelle (sadece kendi eventi)
+    // Update event (own events only)
     updateEvent: builder.mutation<
       Event,
       { id: string; data: UpdateEventRequest }
@@ -75,16 +75,20 @@ export const eventsApi = createApi({
       invalidatesTags: (result, error, { id }) => [{ type: "Event", id }],
     }),
 
-    // Event'e katıl
-    joinEvent: builder.mutation<{ message: string }, string>({
-      query: (id) => ({
+    // Join event
+    joinEvent: builder.mutation<
+      { message: string },
+      { id: string; eventId: string }
+    >({
+      query: ({ id, eventId }) => ({
         url: `${id}/join`,
         method: "POST",
+        body: { eve: eventId },
       }),
       invalidatesTags: (result, error, id) => [{ type: "Event", id }],
     }),
 
-    // Event'ten ayrıl
+    // Leave event
     leaveEvent: builder.mutation<{ message: string }, string>({
       query: (id) => ({
         url: `${id}/leave`,
@@ -93,9 +97,26 @@ export const eventsApi = createApi({
       invalidatesTags: (result, error, id) => [{ type: "Event", id }],
     }),
 
-    // Kendi organize ettiğim eventler
-    getMyEvents: builder.query<Event[], void>({
-      query: () => "my/organized",
+    // Get my organized events
+    getMyEvents: builder.query<
+      EventsResponse,
+      {
+        status?: string;
+        search?: string;
+        limit?: number;
+        offset?: number;
+      }
+    >({
+      query: (params = {}) => {
+        const searchParams = new URLSearchParams();
+        if (params.status) searchParams.append("status", params.status);
+        if (params.search) searchParams.append("search", params.search);
+        if (params.limit) searchParams.append("limit", params.limit.toString());
+        if (params.offset)
+          searchParams.append("offset", params.offset.toString());
+
+        return `my-events?${searchParams.toString()}`;
+      },
       providesTags: ["Event"],
     }),
   }),

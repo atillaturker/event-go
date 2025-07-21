@@ -36,6 +36,12 @@ enum EventStatus {
   COMPLETED
 }
 
+enum AttendanceStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 type Location {
   latitude  Float
   longitude Float
@@ -55,6 +61,10 @@ model User {
   organizedEvents Event[] @relation("EventOrganizer")
   attendedEvents  Event[] @relation("EventAttendees", fields: [attendedEventIds], references: [id])
   attendedEventIds String[] @db.ObjectId
+  
+  // Virtual relation - MongoDB'de fiziksel alan oluşturmaz
+  attendanceRequests EventAttendance[]
+
 }
 
 model Event {
@@ -74,6 +84,24 @@ model Event {
   organizerId   String        @db.ObjectId
   organizer     User          @relation("EventOrganizer", fields: [organizerId], references: [id])
   
+  attendanceRequests EventAttendance[]
+
   attendees     User[]        @relation("EventAttendees", fields: [attendeeIds], references: [id])
   attendeeIds   String[]      @db.ObjectId
 }
+
+model EventAttendance {
+  id        String           @id @default(auto()) @map("_id") @db.ObjectId
+  status    AttendanceStatus @default(PENDING)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  
+  // Relations
+  userId    String           @db.ObjectId
+  user      User             @relation(fields: [userId], references: [id])
+  
+  eventId   String           @db.ObjectId
+  event     Event            @relation(fields: [eventId], references: [id])
+  
+  @@unique([userId, eventId]) 
+  }
