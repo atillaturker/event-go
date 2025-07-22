@@ -72,20 +72,18 @@ export const eventsApi = createApi({
         method: "PUT",
         body: data,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: "Event", id }],
+      invalidatesTags: (_result, _error, { id }) => [{ type: "Event", id }],
     }),
 
     // Join event
-    joinEvent: builder.mutation<
-      { message: string },
-      { id: string; eventId: string }
-    >({
-      query: ({ id, eventId }) => ({
-        url: `${id}/join`,
+    joinEvent: builder.mutation<{ message: string }, string>({
+      query: (eventId) => ({
+        url: `${eventId}/join`,
         method: "POST",
-        body: { eve: eventId },
       }),
-      invalidatesTags: (result, error, id) => [{ type: "Event", id }],
+      invalidatesTags: (_result, _error, eventId) => [
+        { type: "Event", id: eventId },
+      ],
     }),
 
     // Leave event
@@ -94,7 +92,7 @@ export const eventsApi = createApi({
         url: `${id}/leave`,
         method: "POST",
       }),
-      invalidatesTags: (result, error, id) => [{ type: "Event", id }],
+      invalidatesTags: (_result, _error, id) => [{ type: "Event", id }],
     }),
 
     // Get my organized events
@@ -119,6 +117,56 @@ export const eventsApi = createApi({
       },
       providesTags: ["Event"],
     }),
+
+    // Get event attendance requests (for organizers)
+    getEventAttendanceRequests: builder.query<
+      {
+        success: boolean;
+        requests: Array<{
+          id: string;
+          status: "PENDING" | "APPROVED" | "REJECTED";
+          createdAt: string;
+          updatedAt: string;
+          user: {
+            id: string;
+            name: string;
+            email: string;
+          };
+        }>;
+      },
+      string
+    >({
+      query: (eventId) => `${eventId}/requests`,
+      providesTags: (_result, _error, eventId) => [
+        { type: "Event", id: eventId },
+        { type: "Event", id: "ATTENDANCE_REQUESTS" },
+      ],
+    }),
+
+    // Manage attendance request (approve/reject)
+    manageAttendanceRequest: builder.mutation<
+      {
+        success: boolean;
+        message: string;
+        request: {
+          id: string;
+          status: "APPROVED" | "REJECTED";
+          createdAt: string;
+          updatedAt: string;
+        };
+      },
+      {
+        attendanceId: string;
+        status: "APPROVED" | "REJECTED";
+      }
+    >({
+      query: ({ attendanceId, status }) => ({
+        url: `attendance/${attendanceId}`,
+        method: "PUT",
+        body: { status },
+      }),
+      invalidatesTags: [{ type: "Event", id: "ATTENDANCE_REQUESTS" }, "Event"],
+    }),
   }),
 });
 
@@ -130,4 +178,6 @@ export const {
   useJoinEventMutation,
   useLeaveEventMutation,
   useGetMyEventsQuery,
+  useGetEventAttendanceRequestsQuery,
+  useManageAttendanceRequestMutation,
 } = eventsApi;

@@ -3,14 +3,17 @@ import { useNavigation, useRoute } from "@react-navigation/core";
 import React, { useState } from "react";
 import {
   Alert,
+  Dimensions,
   FlatList,
-  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { TabBar, TabView } from "react-native-tab-view";
+import CustomText from "../components/CustomText";
+import EventCard from "../components/EventCard";
 import ScreenHeader from "../components/ScreenHeader";
 import {
   useGetEventAttendanceRequestsQuery,
@@ -18,55 +21,19 @@ import {
   useManageAttendanceRequestMutation,
 } from "../services/eventsApi";
 
-// Header Component
-const AttendeeHeader = ({
-  eventName,
-  eventDate,
-  onBack,
-}: {
-  eventName: string;
-  eventDate: string;
-  onBack: () => void;
-}) => (
-  <View style={styles.headerContainer}>
-    <TouchableOpacity style={styles.backButton} onPress={onBack}>
-      <Text style={styles.backArrow}>←</Text>
-    </TouchableOpacity>
-    <Text style={styles.headerTitle}>Attendees</Text>
-  </View>
-);
-
-// Event Info Component - Enhanced Header
 const EventInfo = ({ event }: { event: any }) => {
   if (!event) return null;
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return {
-      date: date.toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }),
-      time: date.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      }),
-    };
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "ACTIVE":
-        return "#10B981"; // Green
+        return "#10B981";
       case "COMPLETED":
-        return "#6366F1"; // Purple
+        return "#6366F1";
       case "CANCELLED":
-        return "#EF4444"; // Red
+        return "#EF4444";
       default:
-        return "#6B7280"; // Gray
+        return "#6B7280";
     }
   };
 
@@ -83,124 +50,38 @@ const EventInfo = ({ event }: { event: any }) => {
     }
   };
 
-  const dateTime = formatDate(event.date);
-
   return (
     <View style={styles.eventHeaderCard}>
-      <View style={styles.eventHeaderRow}>
-        {/* Event Title and Details */}
-        <View style={styles.eventInfo}>
-          <Text style={styles.eventTitle}>{event.title}</Text>
-
-          {/* Date & Time */}
-          <View style={styles.eventDetailRow}>
-            <Ionicons name="calendar-outline" size={16} color="#6B7280" />
-            <Text style={styles.eventDetailText}>
-              {dateTime.date}, {dateTime.time}
-            </Text>
-          </View>
-
-          {/* Location */}
-          {event.location?.address && (
-            <View style={styles.eventDetailRow}>
-              <Ionicons name="location-outline" size={16} color="#6B7280" />
-              <Text style={styles.eventDetailText}>
-                {event.location.address}
-              </Text>
-            </View>
-          )}
-
-          {/* Status and Attendees Row */}
-          <View style={styles.eventMetaRow}>
-            {/* Status Badge */}
-            <View
-              style={[
-                styles.statusBadge,
-                { backgroundColor: getStatusColor(event.status) + "20" },
-              ]}
-            >
-              <Ionicons
-                name={getStatusIcon(event.status)}
-                size={14}
-                color={getStatusColor(event.status)}
-              />
-              <Text
-                style={[
-                  styles.statusText,
-                  { color: getStatusColor(event.status) },
-                ]}
-              >
-                {event.status}
-              </Text>
-            </View>
-
-            {/* Attendees Summary */}
-            <View style={styles.attendeesInfo}>
-              <Ionicons name="people-outline" size={16} color="#6B7280" />
-              <Text style={styles.attendeesText}>
-                {event.attendeeCount || 0}/{event.capacity} Attendees
-              </Text>
-            </View>
-          </View>
+      <EventCard event={event} />
+      <View style={styles.eventMetaRow}>
+        <View
+          style={[
+            styles.statusBadge,
+            { backgroundColor: getStatusColor(event.status) + "20" },
+          ]}
+        >
+          <Ionicons
+            name={getStatusIcon(event.status)}
+            size={14}
+            color={getStatusColor(event.status)}
+          />
+          <Text
+            style={[styles.statusText, { color: getStatusColor(event.status) }]}
+          >
+            {event.status}
+          </Text>
         </View>
-
-        {/* Event Image */}
-        <Image source={{ uri: event.imageUrl }} style={styles.eventImage} />
+        <View style={styles.attendeesInfo}>
+          <Ionicons name="people-outline" size={16} color="#6B7280" />
+          <Text style={styles.attendeesText}>
+            {event.attendeeCount || 0}/{event.capacity} Attendees
+          </Text>
+        </View>
       </View>
     </View>
   );
 };
 
-// Tab Header Component
-const TabHeader = ({
-  pendingCount,
-  approvedCount,
-  activeTab,
-  onTabChange,
-}: {
-  pendingCount: number;
-  approvedCount: number;
-  activeTab: "pending" | "approved";
-  onTabChange: (tab: "pending" | "approved") => void;
-}) => (
-  <View style={styles.tabContainer}>
-    <TouchableOpacity
-      style={[styles.tab, activeTab === "pending" && styles.activeTab]}
-      onPress={() => onTabChange("pending")}
-    >
-      <Text
-        style={[
-          styles.tabText,
-          activeTab === "pending" && styles.activeTabText,
-        ]}
-      >
-        Pending Requests ({pendingCount})
-      </Text>
-    </TouchableOpacity>
-    <TouchableOpacity
-      style={[styles.tab, activeTab === "approved" && styles.activeTab]}
-      onPress={() => onTabChange("approved")}
-    >
-      <Text
-        style={[
-          styles.tabText,
-          activeTab === "approved" && styles.activeTabText,
-        ]}
-      >
-        Approved Attendees ({approvedCount})
-      </Text>
-    </TouchableOpacity>
-  </View>
-);
-
-// User Avatar Component (Simple placeholder)
-const UserAvatar = ({ name }: { name: string }) => (
-  <View style={styles.avatar}>
-    <Text style={styles.avatarText}>{name.charAt(0).toUpperCase()}</Text>
-  </View>
-);
-
-// User Request Item Component
 const UserRequestItem = ({
   item,
   onApprove,
@@ -213,7 +94,11 @@ const UserRequestItem = ({
   showActions?: boolean;
 }) => (
   <View style={styles.userItem}>
-    <UserAvatar name={item.user.name} />
+    <View style={styles.avatar}>
+      <Text style={styles.avatarText}>
+        {item.user.name.charAt(0).toUpperCase()}
+      </Text>
+    </View>
     <View style={styles.userDetails}>
       <Text style={styles.userName}>{item.user.name}</Text>
       <Text style={styles.userEmail}>{item.user.email}</Text>
@@ -229,7 +114,6 @@ const UserRequestItem = ({
   </View>
 );
 
-// Bottom Actions Component
 const BottomActions = ({
   pendingRequests,
   onRejectAll,
@@ -256,7 +140,9 @@ const BottomActions = ({
 const EventRequestScreen = () => {
   const route = useRoute();
   const { eventId } = route.params as { eventId: string };
-  const [activeTab, setActiveTab] = useState<"pending" | "approved">("pending");
+  const [tabIndex, setTabIndex] = useState(0);
+  const [manageRequest] = useManageAttendanceRequestMutation();
+  const navigation = useNavigation();
 
   const {
     data: eventData,
@@ -264,40 +150,54 @@ const EventRequestScreen = () => {
     error: eventError,
   } = useGetEventByIdQuery(eventId);
 
-  const { data: requestsData, isLoading } =
+  const { data: requestsData, isLoading: requestsLoading } =
     useGetEventAttendanceRequestsQuery(eventId);
 
-  const [manageRequest] = useManageAttendanceRequestMutation();
-  const navigation = useNavigation();
+  const requests = requestsData?.requests || [];
+  const pendingRequests = requests.filter(
+    (req: any) => req.status === "PENDING"
+  );
+  const approvedRequests = requests.filter(
+    (req: any) => req.status === "APPROVED"
+  );
+
+  const routes = [
+    {
+      key: "pending",
+      title: `Pending (${pendingRequests.length})`,
+    },
+    {
+      key: "approved",
+      title: `Approved (${approvedRequests.length})`,
+    },
+  ];
 
   const handleApprove = async (attendanceId: string, userName: string) => {
     try {
       await manageRequest({ attendanceId, status: "APPROVED" }).unwrap();
-      Alert.alert("Başarılı", `${userName} etkinliğe kabul edildi!`);
+      Alert.alert("Success", `${userName} has been accepted to the event!`);
     } catch (error) {
-      Alert.alert("Hata", "İstek onaylanırken bir hata oluştu");
+      Alert.alert("Error", "An error occurred while approving the request");
     }
   };
 
   const handleReject = async (attendanceId: string, userName: string) => {
     try {
       await manageRequest({ attendanceId, status: "REJECTED" }).unwrap();
-      Alert.alert("Başarılı", `${userName} etkinliğe kabul edilmedi`);
+      Alert.alert("Success", `${userName} has been rejected from the event`);
     } catch (error) {
-      Alert.alert("Hata", "İstek reddedilirken bir hata oluştu");
+      Alert.alert("Error", "An error occurred while rejecting the request");
     }
   };
 
   const handleApproveAll = async () => {
-    const pendingRequests =
-      requestsData?.requests?.filter((req) => req.status === "PENDING") || [];
     Alert.alert(
-      "Tümünü Onayla",
-      `${pendingRequests.length} isteği onaylamak istediğinizden emin misiniz?`,
+      "Approve All",
+      `Are you sure you want to approve ${pendingRequests.length} requests?`,
       [
-        { text: "İptal", style: "cancel" },
+        { text: "Cancel", style: "cancel" },
         {
-          text: "Onayla",
+          text: "Approve",
           onPress: async () => {
             for (const request of pendingRequests) {
               try {
@@ -306,7 +206,7 @@ const EventRequestScreen = () => {
                   status: "APPROVED",
                 }).unwrap();
               } catch (error) {
-                console.error("Toplu onay hatası:", error);
+                console.error("Bulk approval error:", error);
               }
             }
           },
@@ -316,27 +216,80 @@ const EventRequestScreen = () => {
   };
 
   const handleRejectAll = () => {
-    Alert.alert("Reddet", "Bu işlev henüz uygulanmadı");
+    Alert.alert("Reject", "This feature has not been implemented yet");
   };
 
-  const handleBack = () => {
-    // Navigate back to the previous screen
-    navigation.goBack();
-  };
-
-  if (isLoading) {
+  if (requestsLoading || eventDetailLoading) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text style={styles.loadingText}>Yükleniyor...</Text>
+        <Text style={styles.loadingText}>Loading...</Text>
       </SafeAreaView>
     );
   }
 
-  const requests = requestsData?.requests || [];
-  const pendingRequests = requests.filter((req) => req.status === "PENDING");
-  const approvedRequests = requests.filter((req) => req.status === "APPROVED");
-  const displayData =
-    activeTab === "pending" ? pendingRequests : approvedRequests;
+  const renderScene = ({ route }: any) => {
+    switch (route.key) {
+      case "pending":
+        return (
+          <FlatList
+            data={pendingRequests}
+            renderItem={({ item }) => (
+              <UserRequestItem
+                item={item}
+                onApprove={handleApprove}
+                onReject={handleReject}
+                showActions={true}
+              />
+            )}
+            keyExtractor={(item) => item.id}
+            style={styles.list}
+            showsVerticalScrollIndicator={false}
+          />
+        );
+      case "approved":
+        return (
+          <FlatList
+            data={approvedRequests}
+            renderItem={({ item }) => (
+              <UserRequestItem
+                item={item}
+                onApprove={handleApprove}
+                onReject={handleReject}
+                showActions={false}
+              />
+            )}
+            keyExtractor={(item) => item.id}
+            style={styles.list}
+            showsVerticalScrollIndicator={false}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  const renderTabBar = (props: any) => {
+    return (
+      <TabBar
+        {...props}
+        activeColor="#333"
+        inactiveColor="#999"
+        pressColor="#E5E5E7"
+        scrollEnabled={true}
+        style={styles.tabBar}
+        indicatorStyle={styles.tabBarIndicator}
+        labelStyle={styles.tabLabel}
+        renderLabel={({ route, focused, color }: any) => (
+          <CustomText
+            style={[styles.tabLabel, { color: focused ? "#111827" : color }]}
+          >
+            {route.title}
+          </CustomText>
+        )}
+        tabStyle={{ width: Dimensions.get("window").width / 2 }}
+      />
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -349,29 +302,15 @@ const EventRequestScreen = () => {
 
       <EventInfo event={eventData} />
 
-      <TabHeader
-        pendingCount={pendingRequests.length}
-        approvedCount={approvedRequests.length}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
+      <TabView
+        navigationState={{ index: tabIndex, routes }}
+        renderScene={renderScene}
+        onIndexChange={setTabIndex}
+        initialLayout={{ width: Dimensions.get("window").width }}
+        renderTabBar={renderTabBar}
       />
 
-      <FlatList
-        data={displayData}
-        renderItem={({ item }) => (
-          <UserRequestItem
-            item={item}
-            onApprove={handleApprove}
-            onReject={handleReject}
-            showActions={activeTab === "pending"}
-          />
-        )}
-        keyExtractor={(item) => item.id}
-        style={styles.list}
-        showsVerticalScrollIndicator={false}
-      />
-
-      {activeTab === "pending" && (
+      {tabIndex === 0 && (
         <BottomActions
           pendingRequests={pendingRequests}
           onRejectAll={handleRejectAll}
@@ -389,8 +328,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FFFFFF",
   },
-
-  // Event Header Card Styles
   eventHeaderCard: {
     backgroundColor: "#FFFFFF",
     marginHorizontal: 16,
@@ -407,33 +344,14 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 2,
   },
-  eventTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#111827",
-    marginBottom: 12,
-    lineHeight: 24,
-  },
-  eventDetailRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  eventDetailText: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginLeft: 8,
-    flex: 1,
-  },
   eventMetaRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 8,
-  },
-  eventImage: {
-    width: 60,
-    height: 60,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#F0F0F0",
   },
   statusBadge: {
     flexDirection: "row",
@@ -458,8 +376,6 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     fontWeight: "500",
   },
-
-  // Header Styles
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -480,40 +396,30 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#333",
   },
-
-  // Tab Styles
-  tabContainer: {
-    flexDirection: "row",
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-  },
-  tab: {
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-    marginRight: 24,
-  },
-  activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: "#333",
-  },
-  tabText: {
-    fontSize: 14,
-    color: "#999",
-    fontWeight: "500",
-  },
-  activeTabText: {
-    color: "#333",
-    fontWeight: "600",
-  },
-
-  // List Styles
   list: {
     flex: 1,
     paddingHorizontal: 16,
   },
 
-  // User Item Styles
+  tabBar: {
+    backgroundColor: "#FFFFFF",
+    elevation: 0,
+    shadowOpacity: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5EB",
+    height: 50,
+  },
+  tabBarIndicator: {
+    backgroundColor: "#111827",
+    height: 1,
+  },
+  tabLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    textTransform: "none",
+    letterSpacing: -0.2,
+  },
+
   userItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -548,26 +454,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
   },
-
-  // Button Styles
   approveButton: {
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#10B981",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
   },
   approveButtonText: {
     fontSize: 14,
-    color: "#333",
+    color: "#FFFFFF",
     fontWeight: "500",
   },
 
-  // Bottom Actions Styles
   bottomActions: {
     flexDirection: "row",
     paddingHorizontal: 16,
     paddingVertical: 20,
-    paddingBottom: 34, // Safe area padding
+    paddingBottom: 34,
     backgroundColor: "#FFFFFF",
     borderTopWidth: 1,
     borderTopColor: "#F0F0F0",
@@ -598,7 +501,6 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
 
-  // Loading State
   loadingText: {
     textAlign: "center",
     fontSize: 16,

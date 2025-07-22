@@ -425,9 +425,17 @@ export const joinEvent = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Find the event by ID
+    console.log("joinEvent called with params:", req.params);
 
     const { eventId } = req.params;
+
+    // Validate eventId
+    if (!eventId || eventId === "undefined" || eventId.length !== 24) {
+      console.log("Invalid eventId:", eventId);
+      res.status(400).json({ error: "Invalid event ID provided" });
+      return;
+    }
+
     const user = req.user;
 
     if (!user) {

@@ -5,6 +5,7 @@ import CreateEventScreen from "../screens/CreateEventScreen";
 import EventsScreen from "../screens/EventsScreen";
 
 import MyEventsScreen from "../screens/MyEventsScreen";
+import TabView from "../screens/TabView";
 import UserScreen from "../screens/UserScreen";
 import { RootState } from "../store/reduxStore";
 
@@ -89,6 +90,14 @@ export const TabNavigator = () => {
         component={UserScreen}
         options={{
           tabBarLabel: "Profile",
+        }}
+      />
+
+      <Tab.Screen
+        name="Test"
+        component={TabView}
+        options={{
+          tabBarLabel: "Tab View",
         }}
       />
     </Tab.Navigator>

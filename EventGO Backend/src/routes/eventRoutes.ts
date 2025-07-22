@@ -17,12 +17,12 @@ const router = express.Router();
 // Public routes
 router.get("/", getEvents);
 
-// Protected routes - my-events önce olmalı
+// Protected routes - specific routes önce olmalı
 router.get("/my-events", authenticateToken, requireOrganizer, getMyEvents);
 router.post("/", authenticateToken, requireOrganizer, createEvent);
 router.put("/:id", authenticateToken, requireOrganizer, updateEvent);
 
-// Attendance routes
+// Attendance routes - ID route'undan önce
 router.post("/:eventId/join", authenticateToken, joinEvent);
 router.get(
   "/:eventId/requests",
