@@ -169,7 +169,6 @@ const MyEventsScreen = () => {
         </View>
       </View>
 
-      {/* Manage Requests Button */}
       <View style={styles.actionButtonsContainer}>
         <TouchableOpacity
           style={styles.manageRequestsButton}
@@ -407,7 +406,7 @@ const styles = StyleSheet.create({
     borderTopColor: "#F0F0F0",
   },
   manageRequestsButton: {
-    backgroundColor: "#1A1A2E",
+    backgroundColor: "#989090ff",
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 10,

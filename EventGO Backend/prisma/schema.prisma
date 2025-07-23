@@ -59,12 +59,10 @@ model User {
   
   // Relations
   organizedEvents Event[] @relation("EventOrganizer")
-  attendedEvents  Event[] @relation("EventAttendees", fields: [attendedEventIds], references: [id])
-  attendedEventIds String[] @db.ObjectId
+  // attendedEvents ve attendedEventIds kaldırıldı
   
-  // Virtual relation - MongoDB'de fiziksel alan oluşturmaz
+  // Tek kaynak: EventAttendance
   attendanceRequests EventAttendance[]
-
 }
 
 model Event {
@@ -84,10 +82,8 @@ model Event {
   organizerId   String        @db.ObjectId
   organizer     User          @relation("EventOrganizer", fields: [organizerId], references: [id])
   
+  // Tek kaynak: EventAttendance
   attendanceRequests EventAttendance[]
-
-  attendees     User[]        @relation("EventAttendees", fields: [attendeeIds], references: [id])
-  attendeeIds   String[]      @db.ObjectId
 }
 
 model EventAttendance {
@@ -104,4 +100,4 @@ model EventAttendance {
   event     Event            @relation(fields: [eventId], references: [id])
   
   @@unique([userId, eventId]) 
-  }
+}

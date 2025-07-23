@@ -12,7 +12,10 @@ import {
   View,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useSelector } from "react-redux";
 import CustomText from "../components/CustomText";
 import {
@@ -24,23 +27,21 @@ import { RootState } from "../store/reduxStore";
 import { EventStatus } from "../types/events";
 import { formatDate } from "../utils/formatDate";
 
-const { width } = Dimensions.get("window");
-
 interface EventDetailScreenProps {
   route: RouteProp<{ params: { eventId: string } }>;
 }
 
+const dimensions = Dimensions.get("window");
+
 const EventDetailScreen: React.FC<EventDetailScreenProps> = () => {
   const route = useRoute();
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const { eventId } = route.params as { eventId: string };
-
   const { data: event, isLoading, error } = useGetEventByIdQuery(eventId);
   const [joinEvent, { isLoading: isJoining }] = useJoinEventMutation();
   const [leaveEvent, { isLoading: isLeaving }] = useLeaveEventMutation();
-
   const user = useSelector((state: RootState) => state.auth.user);
-
   const [showFullDescription, setShowFullDescription] = useState(false);
 
   const handleJoinEvent = async () => {
@@ -154,21 +155,21 @@ const EventDetailScreen: React.FC<EventDetailScreenProps> = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#000" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
-            <Ionicons name="share-outline" size={24} color="#000" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Event Image */}
+      <View style={[styles.header, { marginTop: insets.top }]}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
+        <CustomText fontWeight="800" style={styles.headerTitle}>
+          Event Details
+        </CustomText>
+        <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
+          <Ionicons name="share-outline" size={24} color="#000" />
+        </TouchableOpacity>
+      </View>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
         <Image
           source={{
             uri:
@@ -348,6 +349,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
+    position: "relative",
   },
   loadingContainer: {
     flex: 1,
@@ -374,13 +376,26 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: "#fff",
+    height: 60,
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     zIndex: 1000,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+  },
+  headerTitle: {
+    fontSize: 20,
   },
   backButton: {
     width: 40,
@@ -399,7 +414,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   eventImage: {
-    width: width,
+    width: dimensions.width,
     height: 250,
     backgroundColor: "#f0f0f0",
   },

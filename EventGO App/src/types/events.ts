@@ -63,6 +63,14 @@ export interface UpdateEventRequest {
 
 // API Response types
 export interface EventsResponse {
-  events: Event[];
-  totalCount: number;
+  success: boolean;
+  data: {
+    events: Event[];
+  };
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    pageSize: number;
+    totalItems: number;
+  };
 }

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { PrismaClient } from "../generated/prisma";
+import { AttendanceStatus, PrismaClient } from "../generated/prisma";
 import { EventCategory, EventResponse, EventStatus } from "../types/eventType";
 
 const prisma = new PrismaClient();
@@ -26,7 +26,6 @@ export const getEvents = async (
     }
 
     if (status) {
-      // Eğer status bir string ise virgülle ayrılmış değerleri array'e çevir
       const statusArray =
         typeof status === "string"
           ? status.split(",").map((s) => s.trim())
@@ -38,7 +37,7 @@ export const getEvents = async (
         in: statusArray as EventStatus[],
       };
     } else {
-      where.status = EventStatus.ACTIVE; // Varsayılan olarak sadece aktif eventler
+      where.status = EventStatus.ACTIVE;
     }
 
     if (search) {
@@ -54,7 +53,8 @@ export const getEvents = async (
         organizer: {
           select: { id: true, name: true },
         },
-        attendees: {
+        attendanceRequests: {
+          where: { status: "APPROVED" },
           select: { id: true },
         },
       },
@@ -71,19 +71,27 @@ export const getEvents = async (
       location: event.location,
       category: event.category as EventCategory,
       capacity: event.capacity,
-      attendeeCount: event.attendees.length,
+      attendeeCount: event.attendanceRequests?.length || 0,
       organizerId: event.organizerId,
       organizerName: event.organizer.name,
       imageUrl: event.imageUrl,
       status: event.status as EventStatus,
       createdAt: event.createdAt.toISOString(),
       updatedAt: event.updatedAt.toISOString(),
-      isAttending: false, // Bu bilgi auth middleware'den gelecek
+      isAttending: false,
     }));
 
     res.json({
-      events: eventResponses,
-      totalCount: events.length,
+      success: true,
+      data: {
+        events: eventResponses,
+      },
+      pagination: {
+        currentPage: Math.floor(Number(offset) / Number(limit)) + 1,
+        totalPages: Math.ceil(events.length / Number(limit)),
+        pageSize: Number(limit),
+        totalItems: events.length,
+      },
     });
   } catch (error) {
     console.error("Error fetching events:", error);
@@ -106,8 +114,9 @@ export const getEventById = async (
         organizer: {
           select: { id: true, name: true, email: true },
         },
-        attendees: {
-          select: { id: true, name: true },
+        attendanceRequests: {
+          where: { status: "APPROVED" },
+          select: { id: true, user: { select: { id: true, name: true } } },
         },
       },
     });
@@ -125,7 +134,7 @@ export const getEventById = async (
       location: event.location,
       category: event.category as EventCategory,
       capacity: event.capacity,
-      attendeeCount: event.attendees.length,
+      attendeeCount: event.attendanceRequests?.length || 0,
       organizerId: event.organizerId,
       organizerName: event.organizer.name,
       imageUrl: event.imageUrl,
@@ -181,13 +190,12 @@ export const createEvent = async (
       title: title,
       description: description,
       date: new Date(date), // Convert string to DateTime
-      location: location, // Location type object
+      location: location, // Location type object (address, latitude, longitude)
       category: category as EventCategory,
       capacity: parseInt(capacity),
       organizerId: user.id, // Foreign key to User
       status: EventStatus.ACTIVE, // Default status from schema
       imageUrl: imageUrl || null, // Optional field
-      attendeeIds: [], // Empty array initially
     };
 
     const newEvent = await prisma.event.create({
@@ -196,8 +204,8 @@ export const createEvent = async (
         organizer: {
           select: { id: true, name: true, email: true },
         },
-        attendees: {
-          select: { id: true, name: true },
+        attendanceRequests: {
+          select: { id: true, userId: true, status: true },
         },
       },
     });
@@ -211,7 +219,7 @@ export const createEvent = async (
       location: newEvent.location,
       category: newEvent.category as EventCategory,
       capacity: newEvent.capacity,
-      attendeeCount: newEvent.attendees.length,
+      attendeeCount: newEvent.attendanceRequests?.length || 0,
       organizerId: newEvent.organizerId,
       organizerName: newEvent.organizer.name,
       imageUrl: newEvent.imageUrl,
@@ -270,8 +278,8 @@ export const getMyEvents = async (
         organizer: {
           select: { id: true, name: true },
         },
-        attendees: {
-          select: { id: true, name: true },
+        attendanceRequests: {
+          select: { id: true, userId: true, status: true },
         },
       },
       orderBy: { createdAt: "desc" },
@@ -291,7 +299,7 @@ export const getMyEvents = async (
       location: event.location,
       category: event.category as EventCategory,
       capacity: event.capacity,
-      attendeeCount: event.attendees.length,
+      attendeeCount: event.attendanceRequests?.length || 0,
       organizerId: event.organizerId,
       organizerName: event.organizer.name,
       imageUrl: event.imageUrl,
@@ -313,6 +321,113 @@ export const getMyEvents = async (
 
     res.status(500).json({
       error: "Failed to fetch events",
+      details: process.env.NODE_ENV === "development" ? error : {},
+    });
+  }
+};
+
+export const getUserEvents = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const user = req.user;
+
+    const { status, search, limit = 20, offset = 0 } = req.query;
+
+    // Build where clause for EventAttendance
+    const attendanceWhere: any = {
+      userId: user?.id,
+    };
+
+    // Add status filter if provided
+    if (status) {
+      attendanceWhere.status = status as AttendanceStatus;
+    }
+
+    const userEventAttendances = await prisma.eventAttendance.findMany({
+      where: attendanceWhere,
+      include: {
+        event: {
+          include: {
+            organizer: { select: { id: true, name: true } },
+            attendanceRequests: {
+              where: { status: "APPROVED" },
+              select: { id: true },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      skip: Number(offset),
+      take: Number(limit),
+    });
+
+    const eventResponses = userEventAttendances.map((attendance) => ({
+      id: attendance.event.id,
+      title: attendance.event.title,
+      description: attendance.event.description,
+      date: attendance.event.date.toISOString(),
+      location: attendance.event.location,
+      category: attendance.event.category as EventCategory,
+      capacity: attendance.event.capacity,
+      attendeeCount: attendance.event.attendanceRequests?.length || 0,
+      organizerId: attendance.event.organizerId,
+      organizerName: attendance.event.organizer.name,
+      imageUrl: attendance.event.imageUrl,
+      status: attendance.event.status as EventStatus,
+      createdAt: attendance.event.createdAt.toISOString(),
+      updatedAt: attendance.event.updatedAt.toISOString(),
+      isAttending: attendance.status === "APPROVED",
+      userStatus: attendance.status,
+      requestId: attendance.id,
+      requestDate: attendance.createdAt.toISOString(),
+    }));
+
+    const totalRequestCount = await prisma.eventAttendance.count({
+      where: {
+        userId: user?.id,
+        status: "PENDING",
+      },
+    });
+
+    const totalJoinedCount = await prisma.eventAttendance.count({
+      where: {
+        userId: user?.id,
+        status: "APPROVED",
+      },
+    });
+
+    const totalRejectedCount = await prisma.eventAttendance.count({
+      where: {
+        userId: user?.id,
+        status: "REJECTED",
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "User events fetched successfully",
+      data: {
+        events: eventResponses,
+        counts: {
+          total: userEventAttendances.length,
+          joined: totalJoinedCount,
+          pending: totalRequestCount,
+          rejected: totalRejectedCount,
+        },
+      },
+      pagination: {
+        currentPage: Math.floor(Number(offset) / Number(limit)) + 1,
+        totalPages: Math.ceil(userEventAttendances.length / Number(limit)),
+        pageSize: Number(limit),
+        totalItems: userEventAttendances.length,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching user events:", error);
+    res.status(500).json({
+      error: "Failed to fetch user events",
       details: process.env.NODE_ENV === "development" ? error : {},
     });
   }
@@ -381,8 +496,8 @@ export const updateEvent = async (
         organizer: {
           select: { id: true, name: true, email: true },
         },
-        attendees: {
-          select: { id: true, name: true },
+        attendanceRequests: {
+          select: { id: true, userId: true, status: true },
         },
       },
     });
@@ -396,7 +511,7 @@ export const updateEvent = async (
       location: updatedEvent.location,
       category: updatedEvent.category as EventCategory,
       capacity: updatedEvent.capacity,
-      attendeeCount: updatedEvent.attendees.length,
+      attendeeCount: updatedEvent.attendanceRequests.length,
       organizerId: updatedEvent.organizerId,
       organizerName: updatedEvent.organizer.name,
       imageUrl: updatedEvent.imageUrl,
@@ -571,30 +686,10 @@ export const manageAttendanceRequest = async (
     if (status === "APPROVED") {
       // Use transaction to ensure atomicity
       const result = await prisma.$transaction(async (tx) => {
-        // Update attendance request status
+        // Update attendance request status - EventAttendance is our single source of truth
         const updatedRequest = await tx.eventAttendance.update({
           where: { id: attendanceId },
           data: { status: "APPROVED" },
-        });
-
-        // Add user to event attendees
-        await tx.event.update({
-          where: { id: attendanceRequest.eventId },
-          data: {
-            attendeeIds: {
-              push: attendanceRequest.userId,
-            },
-          },
-        });
-
-        // Add event to user's attended events
-        await tx.user.update({
-          where: { id: attendanceRequest.userId },
-          data: {
-            attendedEventIds: {
-              push: attendanceRequest.eventId,
-            },
-          },
         });
 
         return updatedRequest;

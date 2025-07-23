@@ -14,7 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import CustomText from "../components/CustomText";
 import EventCard from "../components/EventCard";
 import { useGetEventsQuery } from "../services/eventsApi";
-import { Event, EventCategory, EventStatus } from "../types/events";
+import { Event, EventCategory } from "../types/events";
 import { getCategoryDisplayName } from "../utils/categoryDisplay";
 import { formatDate } from "../utils/formatDate";
 
@@ -28,7 +28,6 @@ const EventsScreen = () => {
   const queryParams: any = {
     search: searchText,
     limit: 20,
-    status: `${EventStatus.ACTIVE},${EventStatus.CANCELLED},${EventStatus.COMPLETED}`,
   };
 
   if (selectedCategory) {
@@ -59,12 +58,7 @@ const EventsScreen = () => {
           <CustomText fontWeight="600" style={styles.errorText}>
             Error loading events
           </CustomText>
-          <TouchableOpacity
-            style={styles.retryButton}
-            onPress={() => {
-              // Retry logic
-            }}
-          >
+          <TouchableOpacity style={styles.retryButton} onPress={() => {}}>
             <CustomText fontWeight="600" style={styles.retryButtonText}>
               Try Again
             </CustomText>
@@ -74,7 +68,7 @@ const EventsScreen = () => {
     );
   }
 
-  const events = eventsData?.events || [];
+  const events = eventsData?.data.events || [];
 
   const getMapRegion = () => {
     if (events.length === 0) {

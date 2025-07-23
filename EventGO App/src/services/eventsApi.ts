@@ -11,7 +11,6 @@ export const eventsApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: `${process.env.EXPO_PUBLIC_API_URL}/api/events/`,
     prepareHeaders: (headers, { getState }) => {
-      // Get token from auth slice
       const token = (getState() as any).auth.token;
       if (token) {
         headers.set("authorization", `Bearer ${token}`);
@@ -49,7 +48,7 @@ export const eventsApi = createApi({
     // Single event details
     getEventById: builder.query<Event, string>({
       query: (id) => id,
-      providesTags: (result, error, id) => [{ type: "Event", id }],
+      providesTags: (_result, _error, id) => [{ type: "Event", id }],
     }),
 
     // Create new event (organizer only)
@@ -118,6 +117,29 @@ export const eventsApi = createApi({
       providesTags: ["Event"],
     }),
 
+    // Get user's attended/requested events
+    getUserEvents: builder.query<
+      EventsResponse,
+      {
+        status?: "PENDING" | "APPROVED" | "REJECTED";
+        search?: string;
+        limit?: number;
+        offset?: number;
+      }
+    >({
+      query: (params = {}) => {
+        const searchParams = new URLSearchParams();
+        if (params.status) searchParams.append("status", params.status);
+        if (params.search) searchParams.append("search", params.search);
+        if (params.limit) searchParams.append("limit", params.limit.toString());
+        if (params.offset)
+          searchParams.append("offset", params.offset.toString());
+
+        return `user-events?${searchParams.toString()}`;
+      },
+      providesTags: ["Event"],
+    }),
+
     // Get event attendance requests (for organizers)
     getEventAttendanceRequests: builder.query<
       {
@@ -178,6 +200,7 @@ export const {
   useJoinEventMutation,
   useLeaveEventMutation,
   useGetMyEventsQuery,
+  useGetUserEventsQuery,
   useGetEventAttendanceRequestsQuery,
   useManageAttendanceRequestMutation,
 } = eventsApi;
