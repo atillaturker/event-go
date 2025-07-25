@@ -30,11 +30,13 @@ export const registerSchema = z
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type RegisterFormData = z.infer<typeof registerSchema>;
 
+export type UserRole = "USER" | "ORGANIZER" | "user" | "organizer";
+
 export interface User {
   id: string;
   name: string;
   email: string;
-  role: string;
+  role: UserRole | string; // Backend'den farklı format gelebilir
   createdAt: string;
   updatedAt: string;
 }
@@ -46,6 +48,11 @@ export interface AuthResponse {
     user: User;
     token: string;
   };
+}
+
+export interface ProfileResponse {
+  success: boolean;
+  data: User;
 }
 
 export interface LoginRequest {

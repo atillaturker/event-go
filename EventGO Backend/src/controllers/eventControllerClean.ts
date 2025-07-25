@@ -243,13 +243,13 @@ export const createEvent = async (
   }
 };
 
-// Get events created by the authenticated user
-export const getMyEvents = async (
+// Get events created by the ORGANIZER user
+export const getOrganizerEvents = async (
   req: AuthenticatedRequest,
   res: Response
 ): Promise<void> => {
   try {
-    console.log("getMyEvents called with user:", req.user);
+    console.log("getOrganizerEvents called with user:", req.user);
     const user = req.user;
 
     const { status, search, limit = 20, offset = 0 } = req.query;

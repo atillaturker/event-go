@@ -4,10 +4,7 @@ const TOKEN_KEY = "jwt_token";
 
 export const saveToken = async (token: string) => {
   try {
-    console.log("💾 Saving new token to secure storage...");
     await SecureStore.setItemAsync(TOKEN_KEY, token);
-
-    // Kaydetme işlemini doğrula
     const savedToken = await SecureStore.getItemAsync(TOKEN_KEY);
     if (savedToken === token) {
       console.log("✅ Token successfully saved to secure storage");

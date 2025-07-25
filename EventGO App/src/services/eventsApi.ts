@@ -95,7 +95,7 @@ export const eventsApi = createApi({
     }),
 
     // Get my organized events
-    getMyEvents: builder.query<
+    getOrganizerEvents: builder.query<
       EventsResponse,
       {
         status?: string;
@@ -199,7 +199,7 @@ export const {
   useUpdateEventMutation,
   useJoinEventMutation,
   useLeaveEventMutation,
-  useGetMyEventsQuery,
+  useGetOrganizerEventsQuery,
   useGetUserEventsQuery,
   useGetEventAttendanceRequestsQuery,
   useManageAttendanceRequestMutation,

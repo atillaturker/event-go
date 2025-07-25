@@ -48,8 +48,7 @@ const LoginScreen = () => {
   const handleLogin = async (data: LoginFormData) => {
     try {
       const result = await login(data).unwrap();
-
-      // Store credentials in Redux store
+      console.log("Data", JSON.stringify(result));
       dispatch(
         setCredentials({
           user: result.data.user,
@@ -57,13 +56,9 @@ const LoginScreen = () => {
         })
       );
 
-      // Save token to secure storage
-
       await saveToken(result.data.token);
 
       Alert.alert("Success", "Login successful!");
-      // Navigate to main app screen
-      // navigation.navigate("Dashboard");
     } catch (err: any) {
       Alert.alert("Login Failed", err.data?.error || "Invalid credentials");
     }

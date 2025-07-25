@@ -3,16 +3,26 @@ import type { RootState } from "../store/reduxStore";
 import {
   AuthResponse,
   LoginRequest,
+  ProfileResponse,
   RegisterRequest,
-  User,
 } from "../types/auth";
+import { getToken } from "../utils/secureStorage";
 
 export const authApi = createApi({
   reducerPath: "authApi",
   baseQuery: fetchBaseQuery({
     baseUrl: `${process.env.EXPO_PUBLIC_API_URL}/api/auth/`,
-    prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth.token;
+    prepareHeaders: async (headers, { getState }) => {
+      let token = (getState() as RootState).auth.token;
+
+      if (!token) {
+        token = await getToken();
+        console.log(
+          "🔑 Token from storage in API:",
+          token ? "Found" : "Not found"
+        );
+      }
+
       if (token) {
         headers.set("authorization", `Bearer ${token}`);
       }
@@ -36,7 +46,7 @@ export const authApi = createApi({
         body: userData,
       }),
     }),
-    getProfile: builder.query<User, void>({
+    getProfile: builder.query<ProfileResponse, void>({
       query: () => "profile",
       providesTags: ["User"],
     }),

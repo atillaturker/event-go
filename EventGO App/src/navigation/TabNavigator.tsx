@@ -1,10 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useSelector } from "react-redux";
-import CreateEventScreen from "../screens/CreateEventScreen";
 import EventsScreen from "../screens/EventsScreen";
+import CreateEventScreen from "../screens/organizer/CreateEventScreen";
 
-import MyEventsScreen from "../screens/MyEventsScreen";
+import MyEventsScreen from "../screens/organizer/MyEventsScreen";
+import UserEventsScreen from "../screens/user/UserEventsScreen";
 import UserScreen from "../screens/UserScreen";
 import { RootState } from "../store/reduxStore";
 
@@ -12,7 +13,9 @@ const Tab = createBottomTabNavigator();
 
 export const TabNavigator = () => {
   const user = useSelector((state: RootState) => state.auth.user);
-  const isOrganizer = user?.role === "ORGANIZER";
+  const userRole = user?.role?.toUpperCase();
+  const isOrganizer = userRole === "ORGANIZER";
+  const isUser = userRole === "USER";
 
   return (
     <Tab.Navigator
@@ -56,16 +59,39 @@ export const TabNavigator = () => {
         headerShown: false,
       })}
     >
-      <Tab.Screen
-        name="Events"
-        component={EventsScreen}
-        options={{
-          tabBarLabel: "Events",
-        }}
-      />
+      {isUser && (
+        <>
+          <Tab.Screen
+            name="Events"
+            component={EventsScreen}
+            options={{
+              tabBarLabel: "Events",
+            }}
+          />
+
+          <>
+            <Tab.Screen
+              name="MyEvents"
+              component={UserEventsScreen}
+              options={{
+                tabBarLabel: "MyEvents",
+              }}
+            />
+          </>
+        </>
+      )}
 
       {isOrganizer && (
         <>
+          <>
+            <Tab.Screen
+              name="Events"
+              component={EventsScreen}
+              options={{
+                tabBarLabel: "Events",
+              }}
+            />
+          </>
           <Tab.Screen
             name="Create"
             component={CreateEventScreen}

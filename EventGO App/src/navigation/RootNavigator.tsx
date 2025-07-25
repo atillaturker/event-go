@@ -1,28 +1,37 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
+import { useEffect } from "react";
 import { useSelector } from "react-redux";
 import EventDetailScreen from "../components/EventDetailScreen";
 import LoadingView from "../components/LoadingView";
-import { useAuthInitialize } from "../hooks/useAuthInitalize";
-import EventRequestScreen from "../screens/EventRequest";
+import { useAppDispatch } from "../hooks/redux";
 import LoginScreen from "../screens/LoginScreen";
+import EventRequestScreen from "../screens/organizer/EventRequest";
 import RegisterScreen from "../screens/RegisterScreen";
 import WelcomeScreen from "../screens/WelcomeScreen";
+import { checkAuthToken } from "../store/authSlice";
 import { RootState } from "../store/reduxStore";
 import { TabNavigator } from "./TabNavigator";
 
 const Stack = createStackNavigator();
 
 const RootNavigator = () => {
-  useAuthInitialize();
-  const isAuthenticated = useSelector(
-    (state: RootState) => state.auth.isAuthenticated
+  const dispatch = useAppDispatch();
+  const { isAuthenticated, isLoading, isInitialized } = useSelector(
+    (state: RootState) => state.auth
   );
-  const isLoading = useSelector((state: RootState) => state.auth.isLoading);
 
-  if (isLoading) {
+  useEffect(() => {
+    dispatch(checkAuthToken());
+  }, [dispatch]);
+
+  console.log("Auth state:", { isAuthenticated, isLoading, isInitialized });
+
+  if (isLoading || !isInitialized) {
     return <LoadingView />;
   }
+
+  console.log("Rendering navigation, isAuthenticated:", isAuthenticated);
 
   return (
     <NavigationContainer>

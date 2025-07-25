@@ -4,7 +4,7 @@ import {
   getEventAttendanceRequests,
   getEventById,
   getEvents,
-  getMyEvents,
+  getOrganizerEvents,
   getUserEvents,
   joinEvent,
   manageAttendanceRequest,
@@ -19,7 +19,12 @@ const router = express.Router();
 router.get("/", getEvents);
 
 // Protected routes - specific routes önce olmalı
-router.get("/my-events", authenticateToken, requireOrganizer, getMyEvents);
+router.get(
+  "/my-events",
+  authenticateToken,
+  requireOrganizer,
+  getOrganizerEvents
+);
 router.get("/user-events", authenticateToken, getUserEvents);
 router.post("/", authenticateToken, requireOrganizer, createEvent);
 router.put("/:id", authenticateToken, requireOrganizer, updateEvent);

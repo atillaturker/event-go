@@ -157,7 +157,10 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
       return;
     }
 
-    res.json(user);
+    res.json({
+      success: true,
+      data: user,
+    });
   } catch (error) {
     console.error("Get profile error:", error);
     res.status(500).json({ error: "Server error" });
