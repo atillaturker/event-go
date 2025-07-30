@@ -88,9 +88,9 @@ export interface EventResponse {
   attendeeCount: number;
   organizerId: string;
   organizerName: string;
-  imageUrl?: string | null; // null'a da izin ver
+  imageUrl?: string | null;
   status: EventStatus;
   createdAt: string;
   updatedAt: string;
-  isAttending?: boolean; // kullanıcının bu event'e katılıp katılmadığı
+  isAttending?: boolean;
 }

@@ -1,6 +1,8 @@
 import express from "express";
 import {
+  cancelEvent,
   createEvent,
+  getAllEventAttendanceRequests,
   getEventAttendanceRequests,
   getEventById,
   getEvents,
@@ -16,35 +18,56 @@ import { requireOrganizer } from "../middlewares/roleMiddleware";
 const router = express.Router();
 
 // Public routes
-router.get("/", getEvents);
+router.get("/events", getEvents);
 
-// Protected routes - specific routes önce olmalı
+// Attendance routes (önce sabit endpointler!)
 router.get(
-  "/my-events",
+  "/events/attendance",
   authenticateToken,
   requireOrganizer,
-  getOrganizerEvents
+  getAllEventAttendanceRequests
 );
-router.get("/user-events", authenticateToken, getUserEvents);
-router.post("/", authenticateToken, requireOrganizer, createEvent);
-router.put("/:id", authenticateToken, requireOrganizer, updateEvent);
-
-// Attendance routes - ID route'undan önce
-router.post("/:eventId/join", authenticateToken, joinEvent);
 router.get(
-  "/:eventId/requests",
+  "/events/:eventId/requests",
   authenticateToken,
   requireOrganizer,
   getEventAttendanceRequests
 );
+
+// Event detail (dinamik id en sonda!)
+router.get("/events/:eventId", getEventById);
+
+// Organizer routes
+router.get(
+  "/organizer/events",
+  authenticateToken,
+  requireOrganizer,
+  getOrganizerEvents
+);
+router.post("/events", authenticateToken, requireOrganizer, createEvent);
+router.patch(
+  "/events/:eventId/cancel",
+  authenticateToken,
+  requireOrganizer,
+  cancelEvent
+);
+router.put(
+  "/events/:eventId",
+  authenticateToken,
+  requireOrganizer,
+  updateEvent
+);
+
+// User routes
+router.get("/user/events", authenticateToken, getUserEvents);
+router.post("/events/:eventId/join", authenticateToken, joinEvent);
+
+// Attendance management
 router.put(
   "/attendance/:attendanceId",
   authenticateToken,
   requireOrganizer,
   manageAttendanceRequest
 );
-
-// ID route en sonda olmalı
-router.get("/:id", getEventById);
 
 export default router;

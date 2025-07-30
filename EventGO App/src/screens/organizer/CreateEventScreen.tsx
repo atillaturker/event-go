@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
-import React, { useState } from "react";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   ScrollView,
@@ -11,21 +11,27 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import CategorySelector from "../components/CategorySelector";
-import DateTimeSelector from "../components/DateTimeSelector";
-import LocationSelector from "../components/LocationSelector";
-import ScreenHeader from "../components/ScreenHeader";
-import { useCreateEventMutation } from "../services/eventsApi";
-import { CreateEventRequest, EventCategory } from "../types/events";
+import CategorySelector from "../../components/CategorySelector";
+import DateTimeSelector from "../../components/DateTimeSelector";
+import LocationSelector from "../../components/LocationSelector";
+import ScreenHeader from "../../components/ScreenHeader";
+import {
+  useCreateEventMutation,
+  useUpdateEventMutation,
+} from "../../services/eventsApi";
+import { CreateEventRequest, EventCategory } from "../../types/events";
+import { formatDate } from "../../utils/formatDate";
 
 const CreateEventScreen = () => {
   const navigation = useNavigation();
-  const [createEvent, { isLoading }] = useCreateEventMutation();
+  const [createEvent, { isLoading: isCreateEventLoading }] =
+    useCreateEventMutation();
+  const [updateEvent, { isLoading: isUpdateEventLoading }] =
+    useUpdateEventMutation();
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [showDateModal, setShowDateModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
-
   const [formData, setFormData] = useState<CreateEventRequest>({
     title: "",
     description: "",
@@ -35,10 +41,27 @@ const CreateEventScreen = () => {
       longitude: 28.9784,
       address: "",
     },
-    category: "",
-    capacity: null,
+    category: EventCategory.OTHER,
+    capacity: 0,
     imageUrl: "",
   });
+
+  const route = useRoute();
+  const event = route.params?.event;
+
+  useEffect(() => {
+    if (event) {
+      setFormData({
+        title: event.title,
+        description: event.description,
+        date: event.date,
+        location: event.location,
+        category: event.category,
+        capacity: event.capacity,
+        imageUrl: event.imageUrl,
+      });
+    }
+  }, [event]);
 
   const handleDateChange = (selectedDate: Date) => {
     setSelectedDate(selectedDate);
@@ -46,16 +69,6 @@ const CreateEventScreen = () => {
       ...formData,
       date: selectedDate.toISOString(),
     });
-  };
-
-  const formatDate = (date: string) => {
-    if (!date) return "Select date and time";
-    const d = new Date(date);
-    return (
-      d.toLocaleDateString() +
-      " " +
-      d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-    );
   };
 
   const handleLocationSelect = (
@@ -76,7 +89,6 @@ const CreateEventScreen = () => {
 
   const handleCreateEvent = async () => {
     try {
-      // Basit validasyon
       if (
         !formData.title ||
         !formData.description ||
@@ -88,7 +100,6 @@ const CreateEventScreen = () => {
         return;
       }
 
-      // Date formatını kontrol et
       if (!formData.date) {
         Alert.alert("Error", "Please select a date and time");
         return;
@@ -100,15 +111,25 @@ const CreateEventScreen = () => {
         return;
       }
 
-      await createEvent({
-        ...formData,
-        date: eventDate.toISOString(),
-        capacity: formData.capacity || 0,
-      }).unwrap();
+      // Update event call
+      if (event) {
+        await updateEvent({
+          id: event.id,
+          data: {
+            ...formData,
+          },
+        }).unwrap();
+        Alert.alert("Success", "Event updated successfully!");
+      } else {
+        await createEvent({
+          ...formData,
+          date: eventDate.toISOString(),
+          capacity: formData.capacity || 0,
+        }).unwrap();
 
-      Alert.alert("Success", "Event created successfully!");
+        Alert.alert("Success", "Event created successfully!");
+      }
 
-      // Form'u temizle
       setFormData({
         title: "",
         description: "",
@@ -119,7 +140,7 @@ const CreateEventScreen = () => {
           address: "",
         },
         category: EventCategory.OTHER,
-        capacity: null,
+        capacity: 0,
         imageUrl: "",
       });
       setSelectedDate(new Date());
@@ -133,7 +154,7 @@ const CreateEventScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <ScreenHeader
-        title="Create Event"
+        title={event ? "Update Event" : "Create Event"}
         onBackPress={() => {
           navigation.goBack();
         }}
@@ -242,7 +263,7 @@ const CreateEventScreen = () => {
                 value={formData.capacity?.toString() || ""}
                 onChangeText={(text) => {
                   if (text === "") {
-                    setFormData({ ...formData, capacity: null });
+                    setFormData({ ...formData, capacity: 0 });
                   } else {
                     const numValue = parseInt(text, 10);
                     if (!isNaN(numValue)) {
@@ -274,13 +295,19 @@ const CreateEventScreen = () => {
           <TouchableOpacity
             style={[
               styles.createButton,
-              isLoading && styles.createButtonDisabled,
+              isCreateEventLoading && styles.createButtonDisabled,
             ]}
             onPress={handleCreateEvent}
-            disabled={isLoading}
+            disabled={isCreateEventLoading}
           >
             <Text style={styles.createButtonText}>
-              {isLoading ? "Creating..." : "Create"}
+              {event
+                ? isUpdateEventLoading
+                  ? "Updating..."
+                  : "Update"
+                : isCreateEventLoading
+                ? "Creating..."
+                : "Create"}
             </Text>
           </TouchableOpacity>
         </View>

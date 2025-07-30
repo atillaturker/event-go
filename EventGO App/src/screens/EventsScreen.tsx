@@ -3,6 +3,8 @@ import { useNavigation } from "@react-navigation/native";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  FlatList,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -17,14 +19,15 @@ import { useGetEventsQuery } from "../services/eventsApi";
 import { Event, EventCategory } from "../types/events";
 import { getCategoryDisplayName } from "../utils/categoryDisplay";
 import { formatDate } from "../utils/formatDate";
+import { getMapRegion } from "../utils/mapRegion";
 
 const EventsScreen = () => {
   const [searchText, setSearchText] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<EventCategory | "">(
     ""
   );
+  const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation();
-
   const queryParams: any = {
     search: searchText,
     limit: 20,
@@ -34,9 +37,25 @@ const EventsScreen = () => {
     queryParams.category = selectedCategory;
   }
 
-  const { data: eventsData, error, isLoading } = useGetEventsQuery(queryParams);
+  const {
+    data: eventsData,
+    error,
+    isLoading,
+    refetch,
+  } = useGetEventsQuery(queryParams);
+
+  const events = eventsData?.data.events || [];
 
   const categories = ["All", ...Object.values(EventCategory)];
+
+  const handleEventPress = (event: Event) => {
+    navigation.navigate("EventDetailScreen", { eventId: event.id });
+  };
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
 
   if (isLoading) {
     return (
@@ -68,142 +87,130 @@ const EventsScreen = () => {
     );
   }
 
-  const events = eventsData?.data.events || [];
-
-  const getMapRegion = () => {
-    if (events.length === 0) {
-      return {
-        latitude: 41.0082,
-        longitude: 28.9784,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
-      };
-    }
-
-    const latitudes = events.map((event) => event.location.latitude);
-    const longitudes = events.map((event) => event.location.longitude);
-
-    const minLat = Math.min(...latitudes);
-    const maxLat = Math.max(...latitudes);
-    const minLng = Math.min(...longitudes);
-    const maxLng = Math.max(...longitudes);
-
-    const latDelta = Math.max(maxLat - minLat, 0.01) * 1.5;
-    const lngDelta = Math.max(maxLng - minLng, 0.01) * 1.5;
-
-    return {
-      latitude: (minLat + maxLat) / 2,
-      longitude: (minLng + maxLng) / 2,
-      latitudeDelta: latDelta,
-      longitudeDelta: lngDelta,
-    };
-  };
-
-  const handleEventPress = (event: Event) => {
-    navigation.navigate("EventDetailScreen", { eventId: event.id });
-  };
-
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <CustomText fontWeight="800" style={styles.headerTitle}>
-            Events
-          </CustomText>
-          <TouchableOpacity style={styles.filterButton}>
-            <Ionicons name="options" size={24} color="#000" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Map */}
-        <View style={styles.mapContainer}>
-          <MapView style={styles.map} initialRegion={getMapRegion()}>
-            {events.map((event) => (
-              <Marker
-                key={event.id}
-                coordinate={{
-                  latitude: event.location.latitude,
-                  longitude: event.location.longitude,
-                }}
-                title={event.title}
-                description={`${formatDate(event.date)} - ${
-                  event.location.address
-                }`}
-              />
-            ))}
-          </MapView>
-          <View style={styles.mapOverlay}>
-            <CustomText fontWeight="800" style={styles.mapTitle}>
-              {events.length > 0 ? `${events.length} Events` : "No Events"}
-            </CustomText>
-          </View>
-        </View>
-
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <Ionicons
-            name="search"
-            size={20}
-            color="#999"
-            style={styles.searchIcon}
-          />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search events"
-            placeholderTextColor="#999"
-            value={searchText}
-            onChangeText={setSearchText}
-          />
-        </View>
-
-        {/* Categories */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.categoriesContainer}
-          contentContainerStyle={styles.categoriesContent}
-        >
-          {categories.map((category) => (
-            <TouchableOpacity
-              key={category}
-              style={[
-                styles.categoryButton,
-                selectedCategory === category && styles.categoryButtonActive,
-              ]}
-              onPress={() =>
-                setSelectedCategory(
-                  category === "All" ? "" : (category as EventCategory)
-                )
-              }
-            >
-              <CustomText
-                fontWeight="600"
-                style={[
-                  styles.categoryText,
-                  selectedCategory === category && styles.categoryTextActive,
-                ]}
-              >
-                {getCategoryDisplayName(category)}
+      <FlatList
+        data={events}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <EventCard event={item} onPress={handleEventPress} />
+        )}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+        ListHeaderComponent={
+          <>
+            {/* Header */}
+            <View style={styles.header}>
+              <CustomText fontWeight="800" style={styles.headerTitle}>
+                Events
               </CustomText>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+              <TouchableOpacity style={styles.filterButton}>
+                <Ionicons name="options" size={24} color="#000" />
+              </TouchableOpacity>
+            </View>
 
-        {/* Upcoming Events */}
-        <View style={styles.section}>
-          <CustomText fontWeight="800" style={styles.sectionTitle}>
-            Upcoming Events
+            {/* Map */}
+            <View style={styles.mapContainer}>
+              <MapView style={styles.map} initialRegion={getMapRegion(events)}>
+                {events.map((event) => (
+                  <Marker
+                    onPress={() => {
+                      setTimeout(() => {
+                        navigation.navigate("EventDetailScreen", {
+                          eventId: event.id,
+                        });
+                      }, 1000);
+                    }}
+                    key={event.id}
+                    coordinate={{
+                      latitude: event.location.latitude,
+                      longitude: event.location.longitude,
+                    }}
+                    title={event.title}
+                    description={`${formatDate(event.date)} - ${
+                      event.location.address
+                    }`}
+                  />
+                ))}
+              </MapView>
+              <View style={styles.mapOverlay}>
+                <CustomText fontWeight="800" style={styles.mapTitle}>
+                  {events.length > 0 ? `${events.length} Events` : "No Events"}
+                </CustomText>
+              </View>
+            </View>
+
+            {/* Search Bar */}
+            <View style={styles.searchContainer}>
+              <Ionicons
+                name="search"
+                size={20}
+                color="#999"
+                style={styles.searchIcon}
+              />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search events"
+                placeholderTextColor="#999"
+                value={searchText}
+                onChangeText={setSearchText}
+              />
+            </View>
+
+            {/* Categories */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.categoriesContainer}
+              contentContainerStyle={styles.categoriesContent}
+            >
+              {categories.map((category) => (
+                <TouchableOpacity
+                  key={category}
+                  style={[
+                    styles.categoryButton,
+                    selectedCategory === category &&
+                      styles.categoryButtonActive,
+                  ]}
+                  onPress={() =>
+                    setSelectedCategory(
+                      category === "All" ? "" : (category as EventCategory)
+                    )
+                  }
+                >
+                  <CustomText
+                    fontWeight="600"
+                    style={[
+                      styles.categoryText,
+                      selectedCategory === category &&
+                        styles.categoryTextActive,
+                    ]}
+                  >
+                    {getCategoryDisplayName(category)}
+                  </CustomText>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {/* Upcoming Events Title */}
+            <View style={styles.section}>
+              <CustomText fontWeight="800" style={styles.sectionTitle}>
+                Upcoming Events
+              </CustomText>
+            </View>
+          </>
+        }
+        ListEmptyComponent={
+          <CustomText
+            style={{ color: "#999", textAlign: "center", marginTop: 20 }}
+          >
+            No events found.
           </CustomText>
-          {events.map((event) => (
-            <EventCard
-              key={event.id}
-              event={event}
-              onPress={handleEventPress}
-            />
-          ))}
-        </View>
-      </ScrollView>
+        }
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      />
     </SafeAreaView>
   );
 };

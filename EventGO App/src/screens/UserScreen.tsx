@@ -25,7 +25,6 @@ const UserScreen = () => {
             <CustomText style={styles.label}>Role: {user.role}</CustomText>
           </View>
         )}
-
         <TouchableOpacity
           style={[
             styles.logoutButton,

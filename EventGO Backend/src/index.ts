@@ -15,7 +15,7 @@ app.use(express.json()); // JSON body'leri okuyabilmek için
 
 // Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/events", eventRoutes);
+app.use("/api/", eventRoutes);
 
 app.get("/", (req, res) => {
   res.send("EventGo API çalışıyor 🚀");

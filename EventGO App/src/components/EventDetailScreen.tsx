@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 
 import React, { useState } from "react";
 import {
@@ -28,7 +28,7 @@ import { EventStatus } from "../types/events";
 import { formatDate } from "../utils/formatDate";
 
 interface EventDetailScreenProps {
-  route: RouteProp<{ params: { eventId: string } }>;
+  route: { params: { eventId: string } };
 }
 
 const dimensions = Dimensions.get("window");

@@ -45,8 +45,8 @@ export interface CreateEventRequest {
   description: string;
   date: string;
   location: Location;
-  category: EventCategory | "";
-  capacity: number | null;
+  category: EventCategory;
+  capacity: number;
   imageUrl?: string;
 }
 
@@ -54,11 +54,11 @@ export interface UpdateEventRequest {
   title?: string;
   description?: string;
   date?: string;
-  location?: Location;
   category?: EventCategory;
   capacity?: number;
-  imageUrl?: string;
   status?: EventStatus;
+  imageUrl?: string;
+  location?: Location;
 }
 
 // API Response types

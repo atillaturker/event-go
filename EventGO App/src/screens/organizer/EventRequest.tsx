@@ -12,14 +12,15 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { TabBar, TabView } from "react-native-tab-view";
-import CustomText from "../components/CustomText";
-import EventCard from "../components/EventCard";
-import ScreenHeader from "../components/ScreenHeader";
+import CustomText from "../../components/CustomText";
+import EventCard from "../../components/EventCard";
+import OrganizerOnly from "../../components/OrganizerOnly";
+import ScreenHeader from "../../components/ScreenHeader";
 import {
   useGetEventAttendanceRequestsQuery,
   useGetEventByIdQuery,
   useManageAttendanceRequestMutation,
-} from "../services/eventsApi";
+} from "../../services/eventsApi";
 
 const EventInfo = ({ event }: { event: any }) => {
   if (!event) return null;
@@ -150,8 +151,13 @@ const EventRequestScreen = () => {
     error: eventError,
   } = useGetEventByIdQuery(eventId);
 
-  const { data: requestsData, isLoading: requestsLoading } =
-    useGetEventAttendanceRequestsQuery(eventId);
+  console.log("Event", JSON.stringify(eventData, null, 2));
+
+  const {
+    data: requestsData,
+    isLoading: requestsLoading,
+    isError: requestsError,
+  } = useGetEventAttendanceRequestsQuery(eventId);
 
   const requests = requestsData?.requests || [];
   const pendingRequests = requests.filter(
@@ -292,32 +298,34 @@ const EventRequestScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScreenHeader
-        title="Attendees"
-        onBackPress={() => {
-          navigation.goBack();
-        }}
-      />
-
-      <EventInfo event={eventData} />
-
-      <TabView
-        navigationState={{ index: tabIndex, routes }}
-        renderScene={renderScene}
-        onIndexChange={setTabIndex}
-        initialLayout={{ width: Dimensions.get("window").width }}
-        renderTabBar={renderTabBar}
-      />
-
-      {tabIndex === 0 && (
-        <BottomActions
-          pendingRequests={pendingRequests}
-          onRejectAll={handleRejectAll}
-          onApproveAll={handleApproveAll}
+    <OrganizerOnly>
+      <SafeAreaView style={styles.container}>
+        <ScreenHeader
+          title="Attendees"
+          onBackPress={() => {
+            navigation.goBack();
+          }}
         />
-      )}
-    </SafeAreaView>
+
+        <EventInfo event={eventData} />
+
+        <TabView
+          navigationState={{ index: tabIndex, routes }}
+          renderScene={renderScene}
+          onIndexChange={setTabIndex}
+          initialLayout={{ width: Dimensions.get("window").width }}
+          renderTabBar={renderTabBar}
+        />
+
+        {tabIndex === 0 && (
+          <BottomActions
+            pendingRequests={pendingRequests}
+            onRejectAll={handleRejectAll}
+            onApproveAll={handleApproveAll}
+          />
+        )}
+      </SafeAreaView>
+    </OrganizerOnly>
   );
 };
 

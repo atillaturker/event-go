@@ -105,11 +105,10 @@ export const getEventById = async (
   res: Response
 ): Promise<void> => {
   try {
-    console.log("getEventById called with ID:", req.params.id);
-    const { id } = req.params;
+    const { eventId } = req.params;
 
     const event = await prisma.event.findUnique({
-      where: { id },
+      where: { id: eventId },
       include: {
         organizer: {
           select: { id: true, name: true, email: true },
@@ -249,11 +248,9 @@ export const getOrganizerEvents = async (
   res: Response
 ): Promise<void> => {
   try {
-    console.log("getOrganizerEvents called with user:", req.user);
     const user = req.user;
 
     const { status, search, limit = 20, offset = 0 } = req.query;
-    console.log("Query params:", { status, search, limit, offset });
 
     const where: any = {
       organizerId: user?.id,
@@ -270,8 +267,6 @@ export const getOrganizerEvents = async (
       ];
     }
 
-    console.log("Prisma query where:", where);
-
     const events = await prisma.event.findMany({
       where,
       include: {
@@ -286,8 +281,6 @@ export const getOrganizerEvents = async (
       take: Number(limit),
       skip: Number(offset),
     });
-
-    console.log("Found events:", events.length);
 
     const totalCount = await prisma.event.count({ where });
 
@@ -311,10 +304,15 @@ export const getOrganizerEvents = async (
 
     res.json({
       success: true,
-      events: eventResponses,
-      totalCount,
-      currentPage: Math.floor(Number(offset) / Number(limit)) + 1,
-      totalPages: Math.ceil(totalCount / Number(limit)),
+      data: {
+        events: eventResponses,
+      },
+      pagination: {
+        currentPage: Math.floor(Number(offset) / Number(limit)) + 1,
+        totalPages: Math.ceil(totalCount / Number(limit)),
+        pageSize: Number(limit),
+        totalItems: totalCount,
+      },
     });
   } catch (error) {
     console.error("Error fetching organizer events:", error);
@@ -440,18 +438,11 @@ export const updateEvent = async (
 ): Promise<void> => {
   try {
     const user = req.user;
-    const { id } = req.params;
-
-    if (!user || user.role !== "ORGANIZER") {
-      res.status(403).json({
-        error: "Only organizers can update events",
-      });
-      return;
-    }
+    const { eventId } = req.params;
 
     // Check if event exists and belongs to the user
     const existingEvent = await prisma.event.findUnique({
-      where: { id },
+      where: { id: eventId },
     });
 
     if (!existingEvent) {
@@ -459,7 +450,7 @@ export const updateEvent = async (
       return;
     }
 
-    if (existingEvent.organizerId !== user.id) {
+    if (existingEvent.organizerId !== user?.id) {
       res.status(403).json({ error: "You can only update your own events" });
       return;
     }
@@ -490,7 +481,7 @@ export const updateEvent = async (
     });
 
     const updatedEvent = await prisma.event.update({
-      where: { id },
+      where: { id: eventId },
       data: updateData,
       include: {
         organizer: {
@@ -540,8 +531,6 @@ export const joinEvent = async (
   res: Response
 ): Promise<void> => {
   try {
-    console.log("joinEvent called with params:", req.params);
-
     const { eventId } = req.params;
 
     // Validate eventId
@@ -566,9 +555,25 @@ export const joinEvent = async (
         status: "PENDING",
       },
     });
+
+    const approvedRequest = await prisma.eventAttendance.findFirst({
+      where: {
+        eventId: eventId,
+        userId: user.id,
+        status: "APPROVED",
+      },
+    });
+
     if (existingRequest) {
       res.status(400).json({
         error: "You already have a pending request to join this event",
+      });
+      return;
+    }
+
+    if (approvedRequest) {
+      res.status(400).json({
+        error: "You already have a joined this event",
       });
       return;
     }
@@ -591,6 +596,50 @@ export const joinEvent = async (
     console.error("Error joining event:", error);
     res.status(500).json({
       error: "Failed to join event",
+      details: process.env.NODE_ENV === "development" ? error : {},
+    });
+  }
+};
+
+export const cancelEvent = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { eventId } = req.params;
+
+    const event = await prisma.event.findUnique({
+      where: {
+        id: eventId,
+      },
+    });
+
+    if (!event) {
+      res.status(404).json({
+        error: "Event not found",
+      });
+      return;
+    }
+    if (event?.status !== "ACTIVE") {
+      res.status(404).json({
+        error: "Only active events can be cancelled",
+      });
+      return;
+    }
+    await prisma.event.update({
+      where: {
+        id: eventId,
+      },
+      data: {
+        status: "CANCELLED",
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `${event.title} cancelled successfully`,
+    });
+  } catch (error) {
+    console.error("Error updating event status:", error);
+    res.status(500).json({
+      error: "Failed to update event status",
       details: process.env.NODE_ENV === "development" ? error : {},
     });
   }
@@ -644,6 +693,34 @@ export const getEventAttendanceRequests = async (
       details: process.env.NODE_ENV === "development" ? error : {},
     });
   }
+};
+
+export const getAllEventAttendanceRequests = async (
+  req: AuthenticatedRequest,
+  res: Response
+) => {
+  const user = req.user;
+
+  const allEventsAttendanceRequests = await prisma.eventAttendance.findMany({
+    where: {
+      status: "PENDING",
+      event: {
+        organizerId: user?.id,
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  console.log(
+    "All Events Attendance Requests:",
+    JSON.stringify(allEventsAttendanceRequests, null, 2)
+  );
+
+  res.json({
+    success: true,
+    message: "All event attendance requests fetched successfully",
+    data: allEventsAttendanceRequests,
+  });
 };
 
 // Manage attendance request (approve/reject)

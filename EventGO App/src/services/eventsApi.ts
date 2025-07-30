@@ -9,7 +9,7 @@ import {
 export const eventsApi = createApi({
   reducerPath: "eventsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: `${process.env.EXPO_PUBLIC_API_URL}/api/events/`,
+    baseUrl: `${process.env.EXPO_PUBLIC_API_URL}/api/`,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as any).auth.token;
       if (token) {
@@ -40,25 +40,35 @@ export const eventsApi = createApi({
         if (params.offset)
           searchParams.append("offset", params.offset.toString());
 
-        return `?${searchParams.toString()}`;
+        return `events?${searchParams.toString()}`;
       },
       providesTags: ["Event"],
     }),
 
     // Single event details
     getEventById: builder.query<Event, string>({
-      query: (id) => id,
+      query: (id) => `events/${id}`,
       providesTags: (_result, _error, id) => [{ type: "Event", id }],
     }),
 
     // Create new event (organizer only)
     createEvent: builder.mutation<Event, CreateEventRequest>({
       query: (eventData) => ({
-        url: "",
+        url: "events",
         method: "POST",
         body: eventData,
       }),
       invalidatesTags: ["Event"],
+    }),
+
+    cancelEvent: builder.mutation<
+      { success: boolean; message: string },
+      string
+    >({
+      query: (eventId: string) => ({
+        url: `events/${eventId}/cancel`,
+        method: "PATCH",
+      }),
     }),
 
     // Update event (own events only)
@@ -67,7 +77,7 @@ export const eventsApi = createApi({
       { id: string; data: UpdateEventRequest }
     >({
       query: ({ id, data }) => ({
-        url: id,
+        url: `events/${id}`,
         method: "PUT",
         body: data,
       }),
@@ -77,7 +87,7 @@ export const eventsApi = createApi({
     // Join event
     joinEvent: builder.mutation<{ message: string }, string>({
       query: (eventId) => ({
-        url: `${eventId}/join`,
+        url: `events/${eventId}/join`,
         method: "POST",
       }),
       invalidatesTags: (_result, _error, eventId) => [
@@ -112,7 +122,7 @@ export const eventsApi = createApi({
         if (params.offset)
           searchParams.append("offset", params.offset.toString());
 
-        return `my-events?${searchParams.toString()}`;
+        return `organizer/events?${searchParams.toString()}`;
       },
       providesTags: ["Event"],
     }),
@@ -135,7 +145,7 @@ export const eventsApi = createApi({
         if (params.offset)
           searchParams.append("offset", params.offset.toString());
 
-        return `user-events?${searchParams.toString()}`;
+        return `user/events?${searchParams.toString()}`;
       },
       providesTags: ["Event"],
     }),
@@ -158,11 +168,24 @@ export const eventsApi = createApi({
       },
       string
     >({
-      query: (eventId) => `${eventId}/requests`,
+      query: (eventId) => `events/${eventId}/requests`,
       providesTags: (_result, _error, eventId) => [
         { type: "Event", id: eventId },
         { type: "Event", id: "ATTENDANCE_REQUESTS" },
       ],
+    }),
+
+    // Get all event attendance requests (for organizers)
+
+    getAllEventAttendanceRequests: builder.query<
+      {
+        success: boolean;
+        message: string;
+        data: Array<[]>;
+      },
+      void
+    >({
+      query: () => `events/attendance`,
     }),
 
     // Manage attendance request (approve/reject)
@@ -199,8 +222,10 @@ export const {
   useUpdateEventMutation,
   useJoinEventMutation,
   useLeaveEventMutation,
+  useCancelEventMutation,
   useGetOrganizerEventsQuery,
   useGetUserEventsQuery,
+  useGetAllEventAttendanceRequestsQuery,
   useGetEventAttendanceRequestsQuery,
   useManageAttendanceRequestMutation,
 } = eventsApi;

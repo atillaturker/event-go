@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 import EventsScreen from "../screens/EventsScreen";
 import CreateEventScreen from "../screens/organizer/CreateEventScreen";
 
-import MyEventsScreen from "../screens/organizer/MyEventsScreen";
+import MyEventsScreen from "../screens/organizer/OrganizerEventsScreen";
 import UserEventsScreen from "../screens/user/UserEventsScreen";
 import UserScreen from "../screens/UserScreen";
 import { RootState } from "../store/reduxStore";
