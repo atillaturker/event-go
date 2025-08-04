@@ -5,6 +5,7 @@ import {
   EventsResponse,
   UpdateEventRequest,
 } from "../types/events";
+import { UserNotificationType } from "../types/notification";
 
 export const eventsApi = createApi({
   reducerPath: "eventsApi",
@@ -19,7 +20,7 @@ export const eventsApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Event"],
+  tagTypes: ["Event", "Notification"],
   endpoints: (builder) => ({
     getEvents: builder.query<
       EventsResponse,
@@ -168,7 +169,7 @@ export const eventsApi = createApi({
       },
       string
     >({
-      query: (eventId) => `events/${eventId}/requests`,
+      query: (eventId) => `attendance/${eventId}/requests`,
       providesTags: (_result, _error, eventId) => [
         { type: "Event", id: eventId },
         { type: "Event", id: "ATTENDANCE_REQUESTS" },
@@ -185,7 +186,8 @@ export const eventsApi = createApi({
       },
       void
     >({
-      query: () => `events/attendance`,
+      query: () => `attendance`,
+      providesTags: [{ type: "Event", id: "ATTENDANCE_REQUESTS" }],
     }),
 
     // Manage attendance request (approve/reject)
@@ -212,6 +214,50 @@ export const eventsApi = createApi({
       }),
       invalidatesTags: [{ type: "Event", id: "ATTENDANCE_REQUESTS" }, "Event"],
     }),
+
+    getUserNotifications: builder.query<
+      {
+        success: boolean;
+        message: string;
+        data: Array<UserNotificationType>;
+      },
+      void
+    >({
+      query: () => `notifications`,
+      providesTags: ["Notification"],
+    }),
+
+    // Tek bildirimi okundu işaretle
+    markNotificationAsRead: builder.mutation<
+      {
+        success: boolean;
+        message: string;
+        data: any;
+      },
+      string
+    >({
+      query: (notificationId) => ({
+        url: `notifications/${notificationId}/read`,
+        method: "PATCH",
+      }),
+      invalidatesTags: ["Notification"],
+    }),
+
+    // Tüm bildirimleri okundu işaretle
+    markAllNotificationsAsRead: builder.mutation<
+      {
+        success: boolean;
+        message: string;
+        data: { updatedCount: number };
+      },
+      void
+    >({
+      query: () => ({
+        url: `notifications/read-all`,
+        method: "PATCH",
+      }),
+      invalidatesTags: ["Notification"],
+    }),
   }),
 });
 
@@ -227,5 +273,8 @@ export const {
   useGetUserEventsQuery,
   useGetAllEventAttendanceRequestsQuery,
   useGetEventAttendanceRequestsQuery,
+  useGetUserNotificationsQuery,
+  useMarkNotificationAsReadMutation,
+  useMarkAllNotificationsAsReadMutation,
   useManageAttendanceRequestMutation,
 } = eventsApi;

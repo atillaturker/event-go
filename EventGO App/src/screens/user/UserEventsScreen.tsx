@@ -152,7 +152,6 @@ const UserEventsScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <ScreenHeader title="My Events" onBackPress={() => navigation.goBack()} />
-
       <TabView
         navigationState={{ index, routes }}
         renderScene={renderScene}
@@ -259,7 +258,7 @@ export default UserEventsScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: "#FFFFFF",
   },
   tabView: {
     flex: 1,

@@ -305,6 +305,7 @@ const EventRequestScreen = () => {
           onBackPress={() => {
             navigation.goBack();
           }}
+          showBackButton={true}
         />
 
         <EventInfo event={eventData} />

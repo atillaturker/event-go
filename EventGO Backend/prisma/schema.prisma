@@ -42,6 +42,16 @@ enum AttendanceStatus {
   REJECTED
 }
 
+enum NotificationType {
+  EVENT_UPDATED
+  EVENT_CANCELLED
+  EVENT_REMINDER
+  ATTENDANCE_APPROVED
+  ATTENDANCE_REJECTED
+  ATTENDANCE_REQUEST_RECEIVED
+  GENERAL_ANNOUNCEMENT
+}
+
 type Location {
   latitude  Float
   longitude Float
@@ -63,6 +73,7 @@ model User {
   
   // Tek kaynak: EventAttendance
   attendanceRequests EventAttendance[]
+  notifications UserNotification[]
 }
 
 model Event {
@@ -100,4 +111,35 @@ model EventAttendance {
   event     Event            @relation(fields: [eventId], references: [id])
   
   @@unique([userId, eventId]) 
+}
+
+model Notification {
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
+  type        NotificationType 
+  title       String
+  message     String
+  eventId     String?          @db.ObjectId
+  createdAt   DateTime         @default(now())
+  
+  // Değişen alanlar için JSON field
+  changedFields Json?           // Hangi alanların değiştiği ve eski/yeni değerleri
+  eventSnapshot Json?           // Bildirimin gönderildiği andaki event durumu
+
+  // İlişki
+  userNotifications UserNotification[]
+}
+
+
+model UserNotification {
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String       @db.ObjectId
+  notificationId String       @db.ObjectId
+  read           Boolean      @default(false)
+  readAt         DateTime?
+
+  // İlişkiler
+  user           User         @relation(fields: [userId], references: [id])
+  notification   Notification @relation(fields: [notificationId], references: [id])
+
+  @@unique([userId, notificationId])
 }

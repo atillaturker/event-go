@@ -52,7 +52,10 @@ const EventDetailScreen: React.FC<EventDetailScreenProps> = () => {
 
     try {
       await joinEvent(eventId).unwrap();
-      Alert.alert("Success", "You have successfully joined the event!");
+      Alert.alert(
+        "Success",
+        "You have successfully sent a join request to the event."
+      );
     } catch (error: any) {
       const errorMessage = error.data?.error;
       Alert.alert("Error:", errorMessage);

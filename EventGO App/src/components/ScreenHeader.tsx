@@ -2,21 +2,35 @@ import Ionicons from "@expo/vector-icons/build/Ionicons";
 import React from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 import CustomText from "./CustomText";
+import NotificationHeaderIcon from "./NotificationHeader";
 
 interface ScreenHeaderProps {
   onBackPress?: () => void;
+  showBackButton?: boolean;
   title: string;
+  titleStyle?: object;
 }
 
-export const ScreenHeader = ({ onBackPress, title }: ScreenHeaderProps) => {
+export const ScreenHeader = ({
+  onBackPress,
+  showBackButton = false,
+  title,
+  titleStyle,
+}: ScreenHeaderProps) => {
   return (
     <View style={styles.header}>
-      <TouchableOpacity style={styles.backButton} onPress={onBackPress}>
-        <Ionicons name="arrow-back" size={20} color="#000" />
-      </TouchableOpacity>
-      <CustomText style={styles.headerTitle} fontWeight="800">
+      {showBackButton && (
+        <TouchableOpacity style={styles.backButton} onPress={onBackPress}>
+          <Ionicons name="arrow-back" size={20} color="#000" />
+        </TouchableOpacity>
+      )}
+      <CustomText
+        fontWeight="700"
+        style={titleStyle ? titleStyle : styles.headerTitle}
+      >
         {title}
       </CustomText>
+      <NotificationHeaderIcon />
     </View>
   );
 };
@@ -29,13 +43,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 16,
   },
-  backButton: {
-    marginRight: 16,
-  },
+  backButton: {},
   headerTitle: {
     flex: 1,
-    fontSize: 20,
+    fontSize: 25,
     textAlign: "center",
-    marginRight: 35,
+    marginLeft: 10,
   },
 });

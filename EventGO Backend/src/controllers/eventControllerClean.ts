@@ -1,6 +1,11 @@
 import { Request, Response } from "express";
 import { AttendanceStatus, PrismaClient } from "../generated/prisma";
 import { EventCategory, EventResponse, EventStatus } from "../types/eventType";
+import {
+  notifyAttendanceRequestReceived,
+  notifyEventCancellation,
+  notifyEventUpdate,
+} from "./notificationController";
 
 const prisma = new PrismaClient();
 
@@ -480,6 +485,15 @@ export const updateEvent = async (
       }
     });
 
+    const oldEventData = {
+      title: existingEvent.title,
+      description: existingEvent.description,
+      date: existingEvent.date,
+      location: existingEvent.location,
+      capacity: existingEvent.capacity,
+      status: existingEvent.status,
+    };
+
     const updatedEvent = await prisma.event.update({
       where: { id: eventId },
       data: updateData,
@@ -493,7 +507,15 @@ export const updateEvent = async (
       },
     });
 
-    // Create response matching EventResponse interface
+    const newEventData = {
+      title: updatedEvent.title,
+      description: updatedEvent.description,
+      date: updatedEvent.date,
+      location: updatedEvent.location,
+      capacity: updatedEvent.capacity,
+      status: updatedEvent.status,
+    };
+
     const eventResponse: EventResponse = {
       id: updatedEvent.id,
       title: updatedEvent.title,
@@ -517,6 +539,21 @@ export const updateEvent = async (
       message: "Event updated successfully",
       event: eventResponse,
     });
+
+    try {
+      const notificationResult = await notifyEventUpdate(
+        updatedEvent.id,
+        oldEventData,
+        newEventData,
+        `"${updatedEvent.title}" event has been updated.`
+      );
+      console.log("Notification result:", notificationResult);
+    } catch (notificationError) {
+      console.error(
+        "Failed to send notification, but event was updated:",
+        notificationError
+      );
+    }
   } catch (error) {
     console.error("Error updating event:", error);
     res.status(500).json({
@@ -544,6 +581,21 @@ export const joinEvent = async (
 
     if (!user) {
       res.status(401).json({ error: "User not authenticated" });
+      return;
+    }
+
+    // Get event details for notification
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      include: {
+        organizer: {
+          select: { id: true, name: true },
+        },
+      },
+    });
+
+    if (!event) {
+      res.status(404).json({ error: "Event not found" });
       return;
     }
 
@@ -578,6 +630,12 @@ export const joinEvent = async (
       return;
     }
 
+    // Get user details for notification
+    const userDetails = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { name: true },
+    });
+
     // Create a new attendance request
     const attendanceRequest = await prisma.eventAttendance.create({
       data: {
@@ -592,6 +650,21 @@ export const joinEvent = async (
       message: "Attendance request created successfully",
       request: attendanceRequest,
     });
+
+    // Notify organizer about new attendance request
+    try {
+      await notifyAttendanceRequestReceived(
+        event.organizerId,
+        eventId,
+        event.title,
+        userDetails?.name || "A user"
+      );
+    } catch (notificationError) {
+      console.error(
+        "Failed to send attendance request notification:",
+        notificationError
+      );
+    }
   } catch (error) {
     console.error("Error joining event:", error);
     res.status(500).json({
@@ -623,6 +696,7 @@ export const cancelEvent = async (req: AuthenticatedRequest, res: Response) => {
       });
       return;
     }
+
     await prisma.event.update({
       where: {
         id: eventId,
@@ -636,164 +710,20 @@ export const cancelEvent = async (req: AuthenticatedRequest, res: Response) => {
       success: true,
       message: `${event.title} cancelled successfully`,
     });
+
+    // Notify all attendees about event cancellation
+    try {
+      await notifyEventCancellation(eventId, event.title);
+    } catch (notificationError) {
+      console.error(
+        "Failed to send cancellation notification:",
+        notificationError
+      );
+    }
   } catch (error) {
     console.error("Error updating event status:", error);
     res.status(500).json({
       error: "Failed to update event status",
-      details: process.env.NODE_ENV === "development" ? error : {},
-    });
-  }
-};
-
-// Get attendance requests for an event (for organizers)
-export const getEventAttendanceRequests = async (
-  req: AuthenticatedRequest,
-  res: Response
-): Promise<void> => {
-  try {
-    const { eventId } = req.params;
-    const user = req.user;
-
-    // Check if event exists and user is the organizer
-    const event = await prisma.event.findUnique({
-      where: { id: eventId },
-    });
-
-    if (!event) {
-      res.status(404).json({ error: "Event not found" });
-      return;
-    }
-
-    if (event.organizerId !== user?.id) {
-      res
-        .status(403)
-        .json({ error: "You can only view requests for your own events" });
-      return;
-    }
-
-    // Get all attendance requests for this event
-    const attendanceRequests = await prisma.eventAttendance.findMany({
-      where: { eventId },
-      include: {
-        user: {
-          select: { id: true, name: true, email: true },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    res.json({
-      success: true,
-      requests: attendanceRequests,
-    });
-  } catch (error) {
-    console.error("Error fetching attendance requests:", error);
-    res.status(500).json({
-      error: "Failed to fetch attendance requests",
-      details: process.env.NODE_ENV === "development" ? error : {},
-    });
-  }
-};
-
-export const getAllEventAttendanceRequests = async (
-  req: AuthenticatedRequest,
-  res: Response
-) => {
-  const user = req.user;
-
-  const allEventsAttendanceRequests = await prisma.eventAttendance.findMany({
-    where: {
-      status: "PENDING",
-      event: {
-        organizerId: user?.id,
-      },
-    },
-    orderBy: { createdAt: "desc" },
-  });
-
-  console.log(
-    "All Events Attendance Requests:",
-    JSON.stringify(allEventsAttendanceRequests, null, 2)
-  );
-
-  res.json({
-    success: true,
-    message: "All event attendance requests fetched successfully",
-    data: allEventsAttendanceRequests,
-  });
-};
-
-// Manage attendance request (approve/reject)
-export const manageAttendanceRequest = async (
-  req: AuthenticatedRequest,
-  res: Response
-): Promise<void> => {
-  try {
-    const { attendanceId } = req.params;
-    const { status } = req.body; // 'APPROVED' or 'REJECTED'
-    const user = req.user;
-
-    // Validate status
-    if (!["APPROVED", "REJECTED"].includes(status)) {
-      res
-        .status(400)
-        .json({ error: "Status must be 'APPROVED' or 'REJECTED'" });
-      return;
-    }
-
-    // Get attendance request with event info
-    const attendanceRequest = await prisma.eventAttendance.findUnique({
-      where: { id: attendanceId },
-      include: { event: true },
-    });
-
-    if (!attendanceRequest) {
-      res.status(404).json({ error: "Attendance request not found" });
-      return;
-    }
-
-    // Check if user is the organizer of the event
-    if (attendanceRequest.event.organizerId !== user?.id) {
-      res
-        .status(403)
-        .json({ error: "You are not authorized to manage this request" });
-      return;
-    }
-
-    if (status === "APPROVED") {
-      // Use transaction to ensure atomicity
-      const result = await prisma.$transaction(async (tx) => {
-        // Update attendance request status - EventAttendance is our single source of truth
-        const updatedRequest = await tx.eventAttendance.update({
-          where: { id: attendanceId },
-          data: { status: "APPROVED" },
-        });
-
-        return updatedRequest;
-      });
-
-      res.json({
-        success: true,
-        message: "Attendance request approved successfully",
-        request: result,
-      });
-    } else {
-      // Just update status for rejection
-      const updatedRequest = await prisma.eventAttendance.update({
-        where: { id: attendanceId },
-        data: { status: "REJECTED" },
-      });
-
-      res.json({
-        success: true,
-        message: "Attendance request rejected",
-        request: updatedRequest,
-      });
-    }
-  } catch (error) {
-    console.error("Error managing attendance request:", error);
-    res.status(500).json({
-      error: "Failed to manage attendance request",
       details: process.env.NODE_ENV === "development" ? error : {},
     });
   }

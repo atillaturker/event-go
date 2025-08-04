@@ -15,6 +15,7 @@ import MapView, { Marker } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
 import CustomText from "../components/CustomText";
 import EventCard from "../components/EventCard";
+import ScreenHeader from "../components/ScreenHeader";
 import { useGetEventsQuery } from "../services/eventsApi";
 import { Event, EventCategory } from "../types/events";
 import { getCategoryDisplayName } from "../utils/categoryDisplay";
@@ -88,7 +89,7 @@ const EventsScreen = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <FlatList
         data={events}
         keyExtractor={(item) => item.id}
@@ -99,17 +100,12 @@ const EventsScreen = () => {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
         ListHeaderComponent={
-          <>
-            {/* Header */}
-            <View style={styles.header}>
-              <CustomText fontWeight="800" style={styles.headerTitle}>
-                Events
-              </CustomText>
-              <TouchableOpacity style={styles.filterButton}>
-                <Ionicons name="options" size={24} color="#000" />
-              </TouchableOpacity>
-            </View>
-
+          <SafeAreaView>
+            <ScreenHeader
+              title="Events"
+              onBackPress={() => navigation.goBack()}
+              showBackButton={false}
+            />
             {/* Map */}
             <View style={styles.mapContainer}>
               <MapView style={styles.map} initialRegion={getMapRegion(events)}>
@@ -199,7 +195,7 @@ const EventsScreen = () => {
                 Upcoming Events
               </CustomText>
             </View>
-          </>
+          </SafeAreaView>
         }
         ListEmptyComponent={
           <CustomText
@@ -211,7 +207,7 @@ const EventsScreen = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 

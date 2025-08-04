@@ -4,6 +4,7 @@ import { useSelector } from "react-redux";
 import EventsScreen from "../screens/EventsScreen";
 import CreateEventScreen from "../screens/organizer/CreateEventScreen";
 
+import NotificationHeaderIcon from "../components/NotificationHeader";
 import MyEventsScreen from "../screens/organizer/OrganizerEventsScreen";
 import UserEventsScreen from "../screens/user/UserEventsScreen";
 import UserScreen from "../screens/UserScreen";
@@ -57,6 +58,14 @@ export const TabNavigator = () => {
           paddingTop: 8,
         },
         headerShown: false,
+        headerStyle: {
+          backgroundColor: "#FFFFFF",
+          elevation: 0,
+          shadowOpacity: 0,
+          height: 80,
+        },
+        headerTitle: () => <></>, // Hide the title
+        headerRight: () => <NotificationHeaderIcon />,
       })}
     >
       {isUser && (

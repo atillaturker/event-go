@@ -9,6 +9,7 @@ import LoginScreen from "../screens/LoginScreen";
 import EventRequestScreen from "../screens/organizer/EventRequest";
 import RegisterScreen from "../screens/RegisterScreen";
 import WelcomeScreen from "../screens/WelcomeScreen";
+import { eventsApi } from "../services/eventsApi";
 import { checkAuthToken } from "../store/authSlice";
 import { RootState } from "../store/reduxStore";
 import { TabNavigator } from "./TabNavigator";
@@ -24,6 +25,12 @@ const RootNavigator = () => {
   useEffect(() => {
     dispatch(checkAuthToken());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (isAuthenticated && isInitialized) {
+      dispatch(eventsApi.endpoints.getUserNotifications.initiate());
+    }
+  }, [isAuthenticated, isInitialized, dispatch]);
 
   console.log("Auth state:", { isAuthenticated, isLoading, isInitialized });
 
