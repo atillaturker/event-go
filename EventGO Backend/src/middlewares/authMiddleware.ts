@@ -34,3 +34,30 @@ export const authenticateToken = (
     next();
   });
 };
+
+// Optional authentication - doesn't fail if no token provided
+export const optionalAuthenticateToken = (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): void => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) {
+    // No token provided, continue without authentication
+    next();
+    return;
+  }
+
+  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
+    if (err) {
+      // Invalid token, continue without authentication
+      console.log("Invalid token provided, continuing without auth");
+    } else {
+      // Valid token, set user
+      req.user = user;
+    }
+    next();
+  });
+};

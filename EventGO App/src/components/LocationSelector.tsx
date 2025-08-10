@@ -104,17 +104,6 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
     []
   );
 
-  //   const getCurrentLocation = async () => {
-  //     try {
-  //       Alert.alert(
-  //         "Info",
-  //         "Current location feature will be implemented with expo-location"
-  //       );
-  //     } catch (error) {
-  //       Alert.alert("Error", "Could not get current location");
-  //     }
-  //   };
-
   const confrimMapSelection = () => {
     if (selectedLocation) {
       handleLocationSelect(
@@ -126,13 +115,6 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
       Alert.alert("Error", "Please select a location on the map");
     }
   };
-
-  const popularLocations = [
-    "Taksim Square, Istanbul",
-    "Galata Tower, Istanbul",
-    "Bosphorus Bridge, Istanbul",
-    "Sultanahmet, Istanbul",
-  ];
 
   return (
     <BottomSheetModal
@@ -195,23 +177,6 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
             </View>
           )}
         </View>
-
-        {/* Action Buttons */}
-
-        {/* Popular Locations */}
-        {/* <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Popular Locations</Text>
-          {popularLocations.map((location) => (
-            <TouchableOpacity
-              key={location}
-              style={styles.popularLocationItem}
-              onPress={() => handleLocationSelect(location)}
-            >
-              <Text style={styles.popularLocationText}>{location}</Text>
-              <Ionicons name="chevron-forward" size={16} color="#999" />
-            </TouchableOpacity>
-          ))}
-        </View> */}
       </View>
     </BottomSheetModal>
   );

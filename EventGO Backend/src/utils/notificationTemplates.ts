@@ -58,6 +58,16 @@ export const notificationTemplates = {
     category: "Event",
   },
 
+  EVENT_COMPLETED: {
+    title: "Event Completed",
+    getTitle: (eventTitle: string) => `Event Completed: "${eventTitle}"`,
+    getMessage: (eventTitle: string) =>
+      `The event "${eventTitle}" has been completed.`,
+    type: NotificationType.EVENT_COMPLETED,
+    priority: "medium" as const,
+    category: "Event",
+  },
+
   ATTENDANCE_APPROVED: {
     title: "Attendance Approved",
     getTitle: (eventTitle: string) => `Attendance Approved for "${eventTitle}"`,
@@ -182,10 +192,22 @@ export const createNotificationContent = (
       message =
         params.eventTitle && params.eventDate
           ? (notificationTemplates.EVENT_REMINDER.getMessage as any)(
+              params.eventTitle
+            )
+          : "You have an upcoming event.";
+      break;
+
+    case NotificationType.EVENT_COMPLETED:
+      title = params.eventTitle
+        ? template.getTitle(params.eventTitle)
+        : template.title;
+      message =
+        params.eventTitle && params.eventDate
+          ? (notificationTemplates.EVENT_COMPLETED.getMessage as any)(
               params.eventTitle,
               params.eventDate
             )
-          : "You have an upcoming event.";
+          : "An event has been completed.";
       break;
 
     case NotificationType.ATTENDANCE_APPROVED:

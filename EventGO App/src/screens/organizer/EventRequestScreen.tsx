@@ -18,9 +18,9 @@ import OrganizerOnly from "../../components/OrganizerOnly";
 import ScreenHeader from "../../components/ScreenHeader";
 import {
   useGetEventAttendanceRequestsQuery,
-  useGetEventByIdQuery,
   useManageAttendanceRequestMutation,
 } from "../../services/eventsApi";
+import { Event } from "../../types/events";
 
 const EventInfo = ({ event }: { event: any }) => {
   if (!event) return null;
@@ -52,7 +52,7 @@ const EventInfo = ({ event }: { event: any }) => {
   };
 
   return (
-    <View style={styles.eventHeaderCard}>
+    <View>
       <EventCard event={event} />
       <View style={styles.eventMetaRow}>
         <View
@@ -140,16 +140,10 @@ const BottomActions = ({
 
 const EventRequestScreen = () => {
   const route = useRoute();
-  const { eventId } = route.params as { eventId: string };
+  const { event: eventData } = route.params as { event: Event };
   const [tabIndex, setTabIndex] = useState(0);
   const [manageRequest] = useManageAttendanceRequestMutation();
   const navigation = useNavigation();
-
-  const {
-    data: eventData,
-    isLoading: eventDetailLoading,
-    error: eventError,
-  } = useGetEventByIdQuery(eventId);
 
   console.log("Event", JSON.stringify(eventData, null, 2));
 
@@ -157,7 +151,7 @@ const EventRequestScreen = () => {
     data: requestsData,
     isLoading: requestsLoading,
     isError: requestsError,
-  } = useGetEventAttendanceRequestsQuery(eventId);
+  } = useGetEventAttendanceRequestsQuery(eventData.id);
 
   const requests = requestsData?.requests || [];
   const pendingRequests = requests.filter(
@@ -197,6 +191,7 @@ const EventRequestScreen = () => {
   };
 
   const handleApproveAll = async () => {
+    //fix here with handleApproveAll api
     Alert.alert(
       "Approve All",
       `Are you sure you want to approve ${pendingRequests.length} requests?`,
@@ -224,14 +219,6 @@ const EventRequestScreen = () => {
   const handleRejectAll = () => {
     Alert.alert("Reject", "This feature has not been implemented yet");
   };
-
-  if (requestsLoading || eventDetailLoading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.loadingText}>Loading...</Text>
-      </SafeAreaView>
-    );
-  }
 
   const renderScene = ({ route }: any) => {
     switch (route.key) {
@@ -357,10 +344,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#F0F0F0",
+    marginHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
   },
   statusBadge: {
     flexDirection: "row",
@@ -368,6 +354,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
+    marginBottom: 8,
   },
   statusText: {
     fontSize: 12,

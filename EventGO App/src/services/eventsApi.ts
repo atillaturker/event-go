@@ -47,7 +47,10 @@ export const eventsApi = createApi({
     }),
 
     // Single event details
-    getEventById: builder.query<Event, string>({
+    getEventById: builder.query<
+      { success: boolean; data: { event: Event }; message: string },
+      string
+    >({
       query: (id) => `events/${id}`,
       providesTags: (_result, _error, id) => [{ type: "Event", id }],
     }),
@@ -93,6 +96,7 @@ export const eventsApi = createApi({
       }),
       invalidatesTags: (_result, _error, eventId) => [
         { type: "Event", id: eventId },
+        "Event",
       ],
     }),
 
@@ -102,7 +106,10 @@ export const eventsApi = createApi({
         url: `${id}/leave`,
         method: "POST",
       }),
-      invalidatesTags: (_result, _error, id) => [{ type: "Event", id }],
+      invalidatesTags: (_result, _error, id) => [
+        { type: "Event", id },
+        "Event",
+      ],
     }),
 
     // Get my organized events
@@ -130,7 +137,17 @@ export const eventsApi = createApi({
 
     // Get user's attended/requested events
     getUserEvents: builder.query<
-      EventsResponse,
+      {
+        events: Event[];
+        request: {
+          id: string;
+          userStatus: "PENDING" | "APPROVED" | "REJECTED";
+          isAttending: boolean;
+          requestDate: string;
+          updatedAt: string;
+          userId: string;
+        };
+      },
       {
         status?: "PENDING" | "APPROVED" | "REJECTED";
         search?: string;

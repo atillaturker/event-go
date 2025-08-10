@@ -45,6 +45,7 @@ enum AttendanceStatus {
 enum NotificationType {
   EVENT_UPDATED
   EVENT_CANCELLED
+  EVENT_COMPLETED
   EVENT_REMINDER
   ATTENDANCE_APPROVED
   ATTENDANCE_REJECTED
@@ -89,12 +90,19 @@ model Event {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
   
+  // Calculated fields - bunlar backend'de hesaplanacak
+  attendanceCount       Int?  @default(0)     // Onaylanan katılımcı sayısı
+  pendingRequestsCount  Int?  @default(0)     // Bekleyen istek sayısı
+  availableSpots        Int?                  // Kalan kapasite (capacity - attendanceCount)
+  isFull                Boolean? @default(false) // Kapasite dolu mu
+  
   // Relations
   organizerId   String        @db.ObjectId
   organizer     User          @relation("EventOrganizer", fields: [organizerId], references: [id])
   
   // Tek kaynak: EventAttendance
   attendanceRequests EventAttendance[]
+  notifications Notification[]
 }
 
 model EventAttendance {
@@ -126,6 +134,7 @@ model Notification {
   eventSnapshot Json?           // Bildirimin gönderildiği andaki event durumu
 
   // İlişki
+  event             Event?            @relation(fields: [eventId], references: [id])
   userNotifications UserNotification[]
 }
 

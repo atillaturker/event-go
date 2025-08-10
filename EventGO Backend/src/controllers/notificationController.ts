@@ -18,7 +18,6 @@ export const getUserNotifications = async (
 ) => {
   try {
     const userId = req.user?.id;
-    console.log("UserID", userId);
     if (!userId) {
       res.status(401).json({ error: "Unauthorized" });
       return;
@@ -30,7 +29,17 @@ export const getUserNotifications = async (
         read: false, // Sadece okunmamış bildirimler
       },
       include: {
-        notification: true,
+        notification: {
+          include: {
+            event: {
+              select: {
+                id: true,
+                title: true,
+                imageUrl: true,
+              },
+            },
+          },
+        },
       },
       orderBy: {
         notification: {
@@ -360,6 +369,14 @@ export const notifyEventCancellation = async (
   }
 };
 
+// export const notifyEventCompeleted = asyncc {
+//   try {
+
+//   } catch (error) {
+
+//   }
+// }
+
 // Helper function: Detect changed fields
 const detectChangedFields = (oldData: any, newData: any) => {
   const changes: any = {};
@@ -487,5 +504,78 @@ export const markAllNotificationsAsRead = async (
   } catch (error) {
     console.error("Error marking all notifications as read:", error);
     res.status(500).json({ error: "Failed to mark all notifications as read" });
+  }
+};
+
+// Etkinlik tamamlandığında bildirim oluştur
+export const createEventsCompletedNotification = async (
+  expiredEvents: any[]
+) => {
+  try {
+    console.log(
+      `Processing ${expiredEvents.length} expired events for notifications...`
+    );
+    for (const event of expiredEvents) {
+      const eventAttendances = await prisma.eventAttendance.findMany({
+        where: {
+          eventId: event.id,
+          status: "APPROVED",
+        },
+        select: {
+          userId: true,
+        },
+      });
+
+      if (eventAttendances.length === 0) {
+        console.log(`No attendees for event: ${event.title}`);
+        continue;
+      }
+
+      const notificationContent = createNotificationContent(
+        NotificationType.EVENT_COMPLETED,
+        {
+          eventTitle: event.title,
+          eventId: event.id,
+          eventDate: event.date.toISOString(),
+        }
+      );
+
+      if (!notificationContent) {
+        console.error(
+          "Failed to create notification content for event:",
+          event.id
+        );
+        continue;
+      }
+
+      const notification = await prisma.notification.create({
+        data: {
+          title: notificationContent.title,
+          message: notificationContent.message,
+          type: notificationContent.type,
+          eventId: event.id,
+        },
+      });
+
+      const userNotifications = eventAttendances.map((attendance) => ({
+        userId: attendance.userId,
+        notificationId: notification.id,
+      }));
+
+      await prisma.userNotification.createMany({
+        data: userNotifications,
+      });
+      console.log(
+        `Event completion notification sent to ${eventAttendances.length} attendees for event: ${event.title}`
+      );
+
+      return {
+        success: true,
+        processedEvents: expiredEvents.length,
+        message: "Event completion notifications sent successfully.",
+      };
+    }
+  } catch (error) {
+    console.error("Error notifying users about completed events:", error);
   }
 };

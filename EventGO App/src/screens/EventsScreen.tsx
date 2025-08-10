@@ -15,6 +15,7 @@ import MapView, { Marker } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
 import CustomText from "../components/CustomText";
 import EventCard from "../components/EventCard";
+import MapMarker from "../components/MapMarker";
 import ScreenHeader from "../components/ScreenHeader";
 import { useGetEventsQuery } from "../services/eventsApi";
 import { Event, EventCategory } from "../types/events";
@@ -46,6 +47,8 @@ const EventsScreen = () => {
   } = useGetEventsQuery(queryParams);
 
   const events = eventsData?.data.events || [];
+
+  console.log("Events data:", JSON.stringify(events, null, 2));
 
   const categories = ["All", ...Object.values(EventCategory)];
 
@@ -89,18 +92,18 @@ const EventsScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <FlatList
         data={events}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <EventCard event={item} onPress={handleEventPress} />
+          <EventCard event={item} onPress={() => handleEventPress(item)} />
         )}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
         ListHeaderComponent={
-          <SafeAreaView>
+          <View>
             <ScreenHeader
               title="Events"
               onBackPress={() => navigation.goBack()}
@@ -127,7 +130,9 @@ const EventsScreen = () => {
                     description={`${formatDate(event.date)} - ${
                       event.location.address
                     }`}
-                  />
+                  >
+                    <MapMarker event={event} fullTitle={false} />
+                  </Marker>
                 ))}
               </MapView>
               <View style={styles.mapOverlay}>
@@ -195,7 +200,7 @@ const EventsScreen = () => {
                 Upcoming Events
               </CustomText>
             </View>
-          </SafeAreaView>
+          </View>
         }
         ListEmptyComponent={
           <CustomText
@@ -207,7 +212,7 @@ const EventsScreen = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -297,12 +302,11 @@ const styles = StyleSheet.create({
   },
   section: {
     marginHorizontal: 20,
-    marginBottom: 24,
+    marginBottom: 25,
   },
   sectionTitle: {
     fontSize: 21,
     color: "#000",
-    marginBottom: 16,
   },
   eventItem: {
     flexDirection: "row",

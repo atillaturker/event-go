@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "../generated/prisma";
+import { updateEventCalculatedFields } from "../utils/eventCalculations";
 import {
   notifyAttendanceApproved,
   notifyAttendanceRejected,
@@ -147,6 +148,9 @@ export const manageAttendanceRequest = async (
         return updatedRequest;
       });
 
+      // Update calculated fields after approval
+      await updateEventCalculatedFields(attendanceRequest.eventId);
+
       res.json({
         success: true,
         message: "Attendance request approved successfully",
@@ -172,6 +176,9 @@ export const manageAttendanceRequest = async (
         where: { id: attendanceId },
         data: { status: "REJECTED" },
       });
+
+      // Update calculated fields after rejection
+      await updateEventCalculatedFields(attendanceRequest.eventId);
 
       res.json({
         success: true,

@@ -92,5 +92,9 @@ export interface EventResponse {
   status: EventStatus;
   createdAt: string;
   updatedAt: string;
-  isAttending?: boolean;
+  attendanceCount?: number;
+  pendingRequestsCount?: number;
+  availableSpots?: number; // capacity - attendeeCount
+  isFull?: boolean; // true if attendeeCount >= capacity
+  isAttending?: boolean; // true if current user is attending this event
 }

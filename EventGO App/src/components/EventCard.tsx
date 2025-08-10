@@ -26,7 +26,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, onPress }) => {
         >
           <Ionicons
             name="calendar-outline"
-            size={15}
+            size={16}
             color="#999"
             style={{ marginRight: 6 }}
           />
@@ -37,7 +37,7 @@ const EventCard: React.FC<EventCardProps> = ({ event, onPress }) => {
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <Ionicons
             name="location-outline"
-            size={15}
+            size={16}
             color="#666"
             style={{ marginRight: 6 }}
           />
@@ -64,9 +64,10 @@ const styles = StyleSheet.create({
   eventItem: {
     flexDirection: "row",
     alignItems: "center",
-    borderBottomColor: "#F0F0F0",
     marginBottom: 12,
     marginHorizontal: 20,
+    paddingBottom: 8,
+    padding: 8,
   },
   eventContent: {
     flex: 1,

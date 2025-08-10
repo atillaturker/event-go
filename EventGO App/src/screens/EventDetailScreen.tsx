@@ -18,6 +18,7 @@ import {
 } from "react-native-safe-area-context";
 import { useSelector } from "react-redux";
 import CustomText from "../components/CustomText";
+import MapMarker from "../components/MapMarker";
 import {
   useGetEventByIdQuery,
   useJoinEventMutation,
@@ -38,11 +39,18 @@ const EventDetailScreen: React.FC<EventDetailScreenProps> = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { eventId } = route.params as { eventId: string };
-  const { data: event, isLoading, error } = useGetEventByIdQuery(eventId);
+  const { data: eventData, isLoading, error } = useGetEventByIdQuery(eventId);
   const [joinEvent, { isLoading: isJoining }] = useJoinEventMutation();
   const [leaveEvent, { isLoading: isLeaving }] = useLeaveEventMutation();
   const user = useSelector((state: RootState) => state.auth.user);
   const [showFullDescription, setShowFullDescription] = useState(false);
+
+  // Extract event from the response data
+  const event = eventData?.data.event;
+
+  const isUserJoined = event?.isAttending || false;
+
+  console.log("Is user joined:", isUserJoined);
 
   const handleJoinEvent = async () => {
     if (!user) {
@@ -125,7 +133,7 @@ const EventDetailScreen: React.FC<EventDetailScreenProps> = () => {
     );
   };
 
-  const isUserJoined = event?.isAttending || false;
+  // const isUserJoined = event?.isAttending || false;
   const isOrganizer = event?.organizerId === user?.id;
 
   if (isLoading) {
@@ -212,7 +220,7 @@ const EventDetailScreen: React.FC<EventDetailScreenProps> = () => {
             <View style={styles.metaItem}>
               <Ionicons name="location-outline" size={20} color="#666" />
               <CustomText fontWeight="600" style={styles.metaText}>
-                {event.location.address}
+                {event.location.address || "No address provided"}
               </CustomText>
             </View>
 
@@ -255,7 +263,7 @@ const EventDetailScreen: React.FC<EventDetailScreenProps> = () => {
             <View style={styles.organizerInfo}>
               <View style={styles.organizerAvatar}>
                 <CustomText fontWeight="600" style={styles.avatarText}>
-                  {event.organizerName.charAt(0).toUpperCase() || "O"}{" "}
+                  {event.organizerName?.charAt(0).toUpperCase() || "O"}
                 </CustomText>
               </View>
               <View style={styles.organizerDetails}>
@@ -292,12 +300,13 @@ const EventDetailScreen: React.FC<EventDetailScreenProps> = () => {
                 }}
                 title={event.title}
                 description={event.location.address}
-              />
+              >
+                <MapMarker fullTitle={false} event={event} />
+              </Marker>
             </MapView>
             <TouchableOpacity
               style={styles.mapOverlay}
               onPress={() => {
-                // Open full map or external map app
                 Alert.alert("Map", "Open in full map view");
               }}
             />

@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import { AttendanceStatus, PrismaClient } from "../generated/prisma";
 import { EventCategory, EventResponse, EventStatus } from "../types/eventType";
+import { updateEventCalculatedFields } from "../utils/eventCalculations";
 import {
-  notifyAttendanceRequestReceived,
   notifyEventCancellation,
   notifyEventUpdate,
 } from "./notificationController";
@@ -56,11 +56,14 @@ export const getEvents = async (
       where,
       include: {
         organizer: {
-          select: { id: true, name: true },
+          select: { id: true, name: true, email: true },
         },
         attendanceRequests: {
-          where: { status: "APPROVED" },
-          select: { id: true },
+          where: {
+            status: {
+              in: ["APPROVED", "PENDING"],
+            },
+          },
         },
       },
       orderBy: { date: "asc" },
@@ -68,23 +71,37 @@ export const getEvents = async (
       skip: Number(offset),
     });
 
-    const eventResponses: EventResponse[] = events.map((event: any) => ({
-      id: event.id,
-      title: event.title,
-      description: event.description,
-      date: event.date.toISOString(),
-      location: event.location,
-      category: event.category as EventCategory,
-      capacity: event.capacity,
-      attendeeCount: event.attendanceRequests?.length || 0,
-      organizerId: event.organizerId,
-      organizerName: event.organizer.name,
-      imageUrl: event.imageUrl,
-      status: event.status as EventStatus,
-      createdAt: event.createdAt.toISOString(),
-      updatedAt: event.updatedAt.toISOString(),
-      isAttending: false,
-    }));
+    const eventResponses: EventResponse[] = events.map((event) => {
+      const approvedCount = event.attendanceRequests.filter(
+        (request) => request.status === "APPROVED"
+      ).length;
+      const pendingCount = event.attendanceRequests.filter(
+        (request) => request.status === "PENDING"
+      ).length;
+      const availableSpots = event.capacity - (approvedCount + pendingCount);
+      const isFull = approvedCount >= event.capacity;
+
+      return {
+        id: event.id,
+        title: event.title,
+        description: event.description,
+        date: event.date.toISOString(),
+        location: event.location,
+        category: event.category as EventCategory,
+        capacity: event.capacity,
+        attendeeCount: approvedCount + pendingCount,
+        organizerId: event.organizerId,
+        organizerName: event.organizer.name,
+        imageUrl: event.imageUrl,
+        status: event.status as EventStatus,
+        createdAt: event.createdAt.toISOString(),
+        updatedAt: event.updatedAt.toISOString(),
+        pendingRequestsCount: pendingCount,
+        attendanceCount: approvedCount,
+        availableSpots: availableSpots,
+        isFull: isFull,
+      };
+    });
 
     res.json({
       success: true,
@@ -97,6 +114,7 @@ export const getEvents = async (
         pageSize: Number(limit),
         totalItems: events.length,
       },
+      message: "Events fetched successfully",
     });
   } catch (error) {
     console.error("Error fetching events:", error);
@@ -111,6 +129,7 @@ export const getEventById = async (
 ): Promise<void> => {
   try {
     const { eventId } = req.params;
+    const userId = (req as any).user?.id;
 
     const event = await prisma.event.findUnique({
       where: { id: eventId },
@@ -119,8 +138,11 @@ export const getEventById = async (
           select: { id: true, name: true, email: true },
         },
         attendanceRequests: {
-          where: { status: "APPROVED" },
-          select: { id: true, user: { select: { id: true, name: true } } },
+          where: {
+            status: {
+              in: ["APPROVED", "PENDING"],
+            },
+          },
         },
       },
     });
@@ -128,6 +150,24 @@ export const getEventById = async (
     if (!event) {
       res.status(404).json({ error: "Event not found" });
       return;
+    }
+
+    const approvedCount = event.attendanceRequests.filter(
+      (request) => request.status === "APPROVED"
+    ).length;
+    const pendingCount = event.attendanceRequests.filter(
+      (request) => request.status === "PENDING"
+    ).length;
+    const availableSpots = event.capacity - (approvedCount + pendingCount);
+    const isFull = approvedCount >= event.capacity;
+
+    // Check if current user is attending (if authenticated)
+    let isAttending = false;
+    if (userId) {
+      const userAttendance = event.attendanceRequests.find(
+        (request) => request.userId === userId && request.status === "APPROVED"
+      );
+      isAttending = !!userAttendance;
     }
 
     const eventResponse: EventResponse = {
@@ -138,17 +178,27 @@ export const getEventById = async (
       location: event.location,
       category: event.category as EventCategory,
       capacity: event.capacity,
-      attendeeCount: event.attendanceRequests?.length || 0,
+      attendeeCount: approvedCount + pendingCount,
       organizerId: event.organizerId,
       organizerName: event.organizer.name,
       imageUrl: event.imageUrl,
       status: event.status as EventStatus,
       createdAt: event.createdAt.toISOString(),
       updatedAt: event.updatedAt.toISOString(),
-      isAttending: false, // Bu bilgi auth middleware'den gelecek
+      pendingRequestsCount: pendingCount,
+      attendanceCount: approvedCount,
+      availableSpots: availableSpots,
+      isFull: isFull,
+      isAttending: isAttending,
     };
 
-    res.json(eventResponse);
+    res.json({
+      success: true,
+      data: {
+        event: eventResponse,
+      },
+      message: "Event fetched successfully",
+    });
   } catch (error) {
     console.error("Error fetching event:", error);
     res.status(500).json({ error: "Failed to fetch event" });
@@ -230,7 +280,6 @@ export const createEvent = async (
       status: newEvent.status as EventStatus,
       createdAt: newEvent.createdAt.toISOString(),
       updatedAt: newEvent.updatedAt.toISOString(),
-      isAttending: false,
     };
 
     res.status(201).json({
@@ -289,23 +338,37 @@ export const getOrganizerEvents = async (
 
     const totalCount = await prisma.event.count({ where });
 
-    const eventResponses: EventResponse[] = events.map((event: any) => ({
-      id: event.id,
-      title: event.title,
-      description: event.description,
-      date: event.date.toISOString(),
-      location: event.location,
-      category: event.category as EventCategory,
-      capacity: event.capacity,
-      attendeeCount: event.attendanceRequests?.length || 0,
-      organizerId: event.organizerId,
-      organizerName: event.organizer.name,
-      imageUrl: event.imageUrl,
-      status: event.status as EventStatus,
-      createdAt: event.createdAt.toISOString(),
-      updatedAt: event.updatedAt.toISOString(),
-      isAttending: false,
-    }));
+    const eventResponses: EventResponse[] = events.map((event) => {
+      const approvedCount = event.attendanceRequests.filter(
+        (request) => request.status === "APPROVED"
+      ).length;
+      const pendingCount = event.attendanceRequests.filter(
+        (request) => request.status === "PENDING"
+      ).length;
+      const availableSpots = event.capacity - (approvedCount + pendingCount);
+      const isFull = approvedCount >= event.capacity;
+
+      return {
+        id: event.id,
+        title: event.title,
+        description: event.description,
+        date: event.date.toISOString(),
+        location: event.location,
+        category: event.category as EventCategory,
+        capacity: event.capacity,
+        attendeeCount: approvedCount + pendingCount,
+        organizerId: event.organizerId,
+        organizerName: event.organizer.name,
+        imageUrl: event.imageUrl,
+        status: event.status as EventStatus,
+        createdAt: event.createdAt.toISOString(),
+        updatedAt: event.updatedAt.toISOString(),
+        pendingRequestsCount: pendingCount,
+        attendanceCount: approvedCount,
+        availableSpots: availableSpots,
+        isFull: isFull,
+      };
+    });
 
     res.json({
       success: true,
@@ -318,6 +381,7 @@ export const getOrganizerEvents = async (
         pageSize: Number(limit),
         totalItems: totalCount,
       },
+      message: "Organizer events fetched successfully",
     });
   } catch (error) {
     console.error("Error fetching organizer events:", error);
@@ -353,10 +417,13 @@ export const getUserEvents = async (
       include: {
         event: {
           include: {
-            organizer: { select: { id: true, name: true } },
+            organizer: { select: { id: true, name: true, email: true } },
             attendanceRequests: {
-              where: { status: "APPROVED" },
-              select: { id: true },
+              where: {
+                status: {
+                  in: ["APPROVED", "PENDING", "REJECTED"],
+                },
+              },
             },
           },
         },
@@ -366,65 +433,50 @@ export const getUserEvents = async (
       take: Number(limit),
     });
 
+    const totalCount = await prisma.eventAttendance.count({
+      where: {
+        ...attendanceWhere,
+      },
+    });
+
     const eventResponses = userEventAttendances.map((attendance) => ({
-      id: attendance.event.id,
-      title: attendance.event.title,
-      description: attendance.event.description,
-      date: attendance.event.date.toISOString(),
-      location: attendance.event.location,
-      category: attendance.event.category as EventCategory,
-      capacity: attendance.event.capacity,
-      attendeeCount: attendance.event.attendanceRequests?.length || 0,
-      organizerId: attendance.event.organizerId,
-      organizerName: attendance.event.organizer.name,
-      imageUrl: attendance.event.imageUrl,
-      status: attendance.event.status as EventStatus,
-      createdAt: attendance.event.createdAt.toISOString(),
-      updatedAt: attendance.event.updatedAt.toISOString(),
-      isAttending: attendance.status === "APPROVED",
-      userStatus: attendance.status,
-      requestId: attendance.id,
-      requestDate: attendance.createdAt.toISOString(),
+      event: {
+        id: attendance.event.id,
+        title: attendance.event.title,
+        description: attendance.event.description,
+        date: attendance.event.date.toISOString(),
+        location: attendance.event.location,
+        category: attendance.event.category as EventCategory,
+        capacity: attendance.event.capacity,
+        attendeeCount: totalCount,
+        organizerId: attendance.event.organizerId,
+        organizerName: attendance.event.organizer.name,
+        imageUrl: attendance.event.imageUrl,
+        status: attendance.event.status as EventStatus,
+        createdAt: attendance.event.createdAt.toISOString(),
+        updatedAt: attendance.event.updatedAt.toISOString(),
+      },
+      request: {
+        id: attendance.id,
+        userStatus: attendance.status,
+        isAttending: attendance.status === "APPROVED",
+        requestDate: attendance.createdAt.toISOString(),
+        updatedAt: attendance.updatedAt.toISOString(),
+        userId: attendance.userId,
+      },
     }));
-
-    const totalRequestCount = await prisma.eventAttendance.count({
-      where: {
-        userId: user?.id,
-        status: "PENDING",
-      },
-    });
-
-    const totalJoinedCount = await prisma.eventAttendance.count({
-      where: {
-        userId: user?.id,
-        status: "APPROVED",
-      },
-    });
-
-    const totalRejectedCount = await prisma.eventAttendance.count({
-      where: {
-        userId: user?.id,
-        status: "REJECTED",
-      },
-    });
 
     res.json({
       success: true,
       message: "User events fetched successfully",
       data: {
         events: eventResponses,
-        counts: {
-          total: userEventAttendances.length,
-          joined: totalJoinedCount,
-          pending: totalRequestCount,
-          rejected: totalRejectedCount,
-        },
       },
       pagination: {
         currentPage: Math.floor(Number(offset) / Number(limit)) + 1,
-        totalPages: Math.ceil(userEventAttendances.length / Number(limit)),
+        totalPages: Math.ceil(totalCount / Number(limit)),
         pageSize: Number(limit),
-        totalItems: userEventAttendances.length,
+        totalItems: totalCount,
       },
     });
   } catch (error) {
@@ -531,7 +583,6 @@ export const updateEvent = async (
       status: updatedEvent.status as EventStatus,
       createdAt: updatedEvent.createdAt.toISOString(),
       updatedAt: updatedEvent.updatedAt.toISOString(),
-      isAttending: false,
     };
 
     res.json({
@@ -569,14 +620,6 @@ export const joinEvent = async (
 ): Promise<void> => {
   try {
     const { eventId } = req.params;
-
-    // Validate eventId
-    if (!eventId || eventId === "undefined" || eventId.length !== 24) {
-      console.log("Invalid eventId:", eventId);
-      res.status(400).json({ error: "Invalid event ID provided" });
-      return;
-    }
-
     const user = req.user;
 
     if (!user) {
@@ -584,14 +627,9 @@ export const joinEvent = async (
       return;
     }
 
-    // Get event details for notification
+    // Check if event exists
     const event = await prisma.event.findUnique({
       where: { id: eventId },
-      include: {
-        organizer: {
-          select: { id: true, name: true },
-        },
-      },
     });
 
     if (!event) {
@@ -599,44 +637,51 @@ export const joinEvent = async (
       return;
     }
 
-    // Check the user already has a pending request
-    const existingRequest = await prisma.eventAttendance.findFirst({
-      where: {
-        eventId: eventId,
-        userId: user.id,
-        status: "PENDING",
-      },
-    });
-
-    const approvedRequest = await prisma.eventAttendance.findFirst({
-      where: {
-        eventId: eventId,
-        userId: user.id,
-        status: "APPROVED",
-      },
-    });
-
-    if (existingRequest) {
-      res.status(400).json({
-        error: "You already have a pending request to join this event",
-      });
+    if (event.status !== "ACTIVE") {
+      res.status(400).json({ error: "Event is not active" });
       return;
     }
 
-    if (approvedRequest) {
-      res.status(400).json({
-        error: "You already have a joined this event",
+    // Check if event is full (only for events with capacity limit)
+    if (event.capacity && event.capacity > 0) {
+      const currentAttendees = await prisma.eventAttendance.count({
+        where: {
+          eventId: eventId,
+          status: "APPROVED",
+        },
       });
-      return;
+
+      if (currentAttendees >= event.capacity) {
+        res.status(400).json({
+          error: "Event is full",
+          currentAttendees,
+          capacity: event.capacity,
+        });
+        return;
+      }
     }
 
-    // Get user details for notification
-    const userDetails = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { name: true },
+    // Check if user is already attending or has a pending request
+    const existingAttendance = await prisma.eventAttendance.findFirst({
+      where: {
+        eventId: eventId,
+        userId: user.id,
+      },
     });
 
-    // Create a new attendance request
+    if (existingAttendance) {
+      if (existingAttendance.status === "APPROVED") {
+        res.status(400).json({ error: "You are already attending this event" });
+        return;
+      } else if (existingAttendance.status === "PENDING") {
+        res
+          .status(400)
+          .json({ error: "You already have a pending request for this event" });
+        return;
+      }
+    }
+
+    // Create attendance request
     const attendanceRequest = await prisma.eventAttendance.create({
       data: {
         eventId: eventId,
@@ -645,30 +690,65 @@ export const joinEvent = async (
       },
     });
 
+    // Update calculated fields after creating attendance request
+    await updateEventCalculatedFields(eventId);
+
     res.json({
       success: true,
-      message: "Attendance request created successfully",
-      request: attendanceRequest,
+      attendanceRequest,
+      message: "Event join request sent successfully",
     });
-
-    // Notify organizer about new attendance request
-    try {
-      await notifyAttendanceRequestReceived(
-        event.organizerId,
-        eventId,
-        event.title,
-        userDetails?.name || "A user"
-      );
-    } catch (notificationError) {
-      console.error(
-        "Failed to send attendance request notification:",
-        notificationError
-      );
-    }
   } catch (error) {
     console.error("Error joining event:", error);
     res.status(500).json({
       error: "Failed to join event",
+      details: process.env.NODE_ENV === "development" ? error : {},
+    });
+  }
+};
+
+export const leaveEvent = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    const { eventId } = req.params;
+    const user = req.user;
+
+    if (!user) {
+      res.status(401).json({ error: "User not authenticated" });
+      return;
+    }
+
+    // Find user's attendance record for this event
+    const attendanceRecord = await prisma.eventAttendance.findFirst({
+      where: {
+        eventId: eventId,
+        userId: user.id,
+      },
+    });
+
+    if (!attendanceRecord) {
+      res.status(404).json({ error: "You are not attending this event" });
+      return;
+    }
+
+    // Remove attendance record
+    await prisma.eventAttendance.delete({
+      where: { id: attendanceRecord.id },
+    });
+
+    // Update calculated fields after leaving event
+    await updateEventCalculatedFields(eventId);
+
+    res.json({
+      success: true,
+      message: "Successfully left the event",
+    });
+  } catch (error) {
+    console.error("Error leaving event:", error);
+    res.status(500).json({
+      error: "Failed to leave event",
       details: process.env.NODE_ENV === "development" ? error : {},
     });
   }
@@ -705,6 +785,9 @@ export const cancelEvent = async (req: AuthenticatedRequest, res: Response) => {
         status: "CANCELLED",
       },
     });
+
+    // Update calculated fields after canceling event (this will set isFull to false)
+    await updateEventCalculatedFields(eventId);
 
     res.json({
       success: true,

@@ -36,7 +36,11 @@ export interface Event {
   status: EventStatus;
   createdAt: string;
   updatedAt: string;
-  isAttending?: boolean; // whether the user is attending this event
+  attendanceCount?: number;
+  pendingRequestsCount?: number;
+  availableSpots?: number; // calculated as capacity - attendeeCount
+  isFull?: boolean; // true if attendeeCount >= capacity
+  isAttending?: boolean; // whether the current user is attending this event
 }
 
 // API Request types

@@ -1,79 +1,99 @@
 // components/NotificationHeaderIcon.tsx
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import { useNavigation } from "@react-navigation/native";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Image,
   Modal,
   StyleSheet,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { useSelector } from "react-redux";
 import {
   useGetUserNotificationsQuery,
   useMarkAllNotificationsAsReadMutation,
   useMarkNotificationAsReadMutation,
 } from "../services/eventsApi";
+import { RootState } from "../store/reduxStore";
 import { NotificationTypes } from "../types/notification";
 import { formatDate } from "../utils/formatDate";
 import CustomText from "./CustomText";
 
 const NotificationHeaderIcon = () => {
   const [modalVisible, setModalVisible] = useState(false);
-
-  const { data, isLoading, refetch } = useGetUserNotificationsQuery(undefined, {
-    pollingInterval: 15000,
-    refetchOnMountOrArgChange: false,
-    refetchOnFocus: true,
-  });
+  const { user, isAuthenticated } = useSelector(
+    (state: RootState) => state.auth
+  );
+  const navigation = useNavigation();
 
   const [markAsRead] = useMarkNotificationAsReadMutation();
   const [markAllAsRead] = useMarkAllNotificationsAsReadMutation();
 
-  console.log("Data", JSON.stringify(data, null, 2));
+  const { data, isLoading, refetch } = useGetUserNotificationsQuery(undefined, {
+    pollingInterval: 15000,
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+    skip: !isAuthenticated || !user?.id,
+  });
+
+  useEffect(() => {
+    if (isAuthenticated && user?.id) {
+      refetch();
+    }
+  }, [user?.id, isAuthenticated, refetch]);
 
   const notifications = data?.data || [];
   const hasNotifications = notifications.length > 0;
 
   const getNotificationStyle = (type: NotificationTypes) => {
-    const baseStyle = {
-      backgroundColor: "#FFFFFF",
-      borderColor: "#E5E7EB",
-      titleColor: "#374151",
-      eventColor: "#6366F1", // İndigo - event ismi için
-      iconColor: "#9CA3AF",
-    };
-
     let iconName: any = "notifications";
+    let iconBackgroundColor = "#6366F1"; // Default blue
+
     switch (type) {
       case NotificationTypes.EVENT_CANCELLED:
         iconName = "warning";
+        iconBackgroundColor = "#EF4444"; // Red for cancelled
         break;
       case NotificationTypes.EVENT_UPDATED:
         iconName = "information-circle";
+        iconBackgroundColor = "#10B981"; // Green for updates
         break;
       case NotificationTypes.ATTENDANCE_APPROVED:
         iconName = "checkmark-circle";
+        iconBackgroundColor = "#10B981"; // Green for approved
         break;
       case NotificationTypes.ATTENDANCE_REJECTED:
         iconName = "close-circle";
+        iconBackgroundColor = "#EF4444"; // Red for rejected
         break;
       case NotificationTypes.ATTENDANCE_REQUEST_RECEIVED:
         iconName = "person-add";
+        iconBackgroundColor = "#F59E0B"; // Orange for requests
+        break;
+      case NotificationTypes.EVENT_REMINDER:
+        iconName = "time";
+        iconBackgroundColor = "#8B5CF6"; // Purple for reminders
+        break;
+      case NotificationTypes.EVENT_COMPLETED:
+        iconName = "checkmark-done";
+        iconBackgroundColor = "#059669"; // Dark green for completed
         break;
       default:
         iconName = "notifications";
+        iconBackgroundColor = "#6366F1"; // Default blue
     }
 
     return {
-      ...baseStyle,
       iconName,
+      iconBackgroundColor,
     };
   };
 
-  // Helper function to extract event name and format notification
   const parseNotificationContent = (
     title: string,
     message: string,
@@ -116,7 +136,9 @@ const NotificationHeaderIcon = () => {
   const handleMarkAsRead = async (notificationId: string) => {
     try {
       await markAsRead(notificationId).unwrap();
-      refetch();
+      setModalVisible(false);
+      navigation.navigate("MyEvents");
+      console.log("Notification marked as read:", notificationId);
     } catch (error) {
       Alert.alert(
         "Error",
@@ -238,96 +260,75 @@ const NotificationHeaderIcon = () => {
                         );
 
                       return (
-                        <View
-                          style={[
-                            styles.notificationItem,
-                            {
-                              backgroundColor:
-                                notificationStyle.backgroundColor,
-                              borderColor: notificationStyle.borderColor,
-                            },
-                          ]}
+                        <TouchableOpacity
+                          style={styles.notificationItem}
+                          onPress={() => handleMarkAsRead(item.notificationId)}
+                          activeOpacity={0.7}
                         >
-                          <View style={styles.notificationHeader}>
-                            <View
-                              style={{
-                                flexDirection: "row",
-                                alignItems: "center",
-                                flex: 1,
-                                gap: 8,
-                              }}
-                            >
-                              <View style={{ flex: 1 }}>
-                                <CustomText
-                                  fontWeight="600"
-                                  style={[
-                                    styles.notificationTitle,
-                                    { color: notificationStyle.titleColor },
-                                  ]}
-                                >
-                                  {cleanTitle}
-                                </CustomText>
-                                {eventName && (
-                                  <View style={styles.eventNameContainer}>
-                                    <Ionicons
-                                      name="calendar"
-                                      size={16}
-                                      color="#6366F1"
-                                    />
-                                    <CustomText
-                                      fontWeight="700"
-                                      style={styles.eventName}
-                                    >
-                                      {`${eventName}`}
-                                    </CustomText>
-                                  </View>
-                                )}
-                              </View>
-                            </View>
-
-                            <TouchableOpacity
-                              onPress={() =>
-                                handleMarkAsRead(item.notificationId)
-                              }
-                            >
-                              <Ionicons
-                                name="checkmark-circle"
-                                size={28}
-                                color="#a9e3cfff"
+                          {/* Left side - Event Image or Icon */}
+                          <View style={styles.notificationImageContainer}>
+                            {item.notification.event?.imageUrl ? (
+                              <Image
+                                source={{
+                                  uri: item.notification.event.imageUrl,
+                                }}
+                                style={styles.eventImage}
+                                resizeMode="cover"
                               />
-                            </TouchableOpacity>
+                            ) : (
+                              <View
+                                style={[
+                                  styles.notificationIconContainer,
+                                  {
+                                    backgroundColor:
+                                      notificationStyle.iconBackgroundColor,
+                                  },
+                                ]}
+                              >
+                                <Ionicons
+                                  name={notificationStyle.iconName}
+                                  size={42}
+                                  color="#FFFFFF"
+                                />
+                              </View>
+                            )}
                           </View>
 
-                          <View style={styles.dateContainer}>
-                            {additionalInfo && (
-                              <CustomText
-                                fontWeight="500"
-                                style={styles.additionalInfo}
-                              >
-                                {additionalInfo}
-                              </CustomText>
-                            )}
+                          {/* Right side - Content */}
+                          <View style={styles.notificationContent}>
                             <CustomText
-                              fontWeight="500"
-                              style={styles.notificationDate}
+                              fontWeight="600"
+                              style={styles.notificationTitle}
+                              numberOfLines={2}
+                              ellipsizeMode="tail"
                             >
+                              {cleanTitle} - {eventName}
+                            </CustomText>
+
+                            <CustomText style={styles.notificationDate}>
                               {formatDate(item.notification.createdAt)}
                             </CustomText>
                           </View>
-                        </View>
+                        </TouchableOpacity>
                       );
                     }}
                     ListEmptyComponent={
                       <View style={styles.emptyContainer}>
                         <Ionicons
                           name="notifications-off-outline"
-                          size={64}
+                          size={90}
                           color="#CBD5E1"
                         />
-                        <CustomText style={styles.emptyTitle}>
+                        <CustomText
+                          fontWeight="600-italic"
+                          style={styles.emptyTitle}
+                        >
                           No new notifications
                         </CustomText>
-                        <CustomText style={styles.emptyText}>
+                        <CustomText
+                          fontWeight="500-italic"
+                          style={styles.emptyText}
+                        >
                           You have read all your notifications!
                         </CustomText>
                       </View>
@@ -430,88 +431,46 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   notificationItem: {
-    marginBottom: 16,
-    padding: 18,
-    borderRadius: 16,
-    borderWidth: 1,
-    shadowColor: "#6366F1",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  notificationHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 12,
+    alignItems: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  notificationImageContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 15,
+    marginRight: 16,
+    overflow: "hidden",
+  },
+  eventImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 15,
   },
   notificationIconContainer: {
-    width: 28,
-    height: 28,
-    borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.9)",
+    width: 60,
+    height: 60,
+    borderRadius: 25,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1.5,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 1,
-    elevation: 1,
   },
-  markReadButton: {
-    padding: 10,
-    borderRadius: 20,
-    backgroundColor: "#ECFDF5",
-    borderWidth: 1,
-    borderColor: "#10B981",
-    shadowColor: "#10B981",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+  notificationContent: {
+    flex: 1,
+    justifyContent: "center",
   },
   notificationTitle: {
     fontSize: 16,
-    color: "#374151",
+    color: "#111827",
     marginBottom: 4,
     fontWeight: "600",
   },
-  eventNameContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderRadius: 12,
-  },
-  eventName: {
-    fontSize: 15,
-    color: "#6366F1",
-    fontWeight: "700",
-  },
-  additionalInfo: {
-    fontSize: 13,
-    fontWeight: "500",
-    color: "#6B7280",
-  },
-  dateContainer: {
-    marginTop: 6,
-    alignItems: "flex-end",
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
   notificationDate: {
-    fontSize: 12,
+    fontSize: 14,
     color: "#6B7280",
+    fontWeight: "400",
   },
   loadingContainer: {
     alignItems: "center",
@@ -525,18 +484,17 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     alignItems: "center",
-    paddingVertical: 60,
-    paddingHorizontal: 20,
+    paddingBottom: 45,
+    paddingTop: 30,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 24,
     color: "#333",
     marginTop: 16,
     marginBottom: 8,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: 16,
     color: "#666",
     textAlign: "center",
     lineHeight: 20,

@@ -55,6 +55,11 @@ const MyEventsScreen = () => {
   const { data: allEventsAttendanceRequests, refetch: refetchRequests } =
     useGetAllEventAttendanceRequestsQuery();
 
+  console.log(
+    "All Events Attendance Requests:",
+    JSON.stringify(allEventsAttendanceRequests, null, 2)
+  );
+
   const [
     cancelEvent,
     { isLoading: isLoadingCancelEvent, isSuccess: isCancelSuccess },
@@ -65,8 +70,6 @@ const MyEventsScreen = () => {
       bottomSheetRef.current?.close();
     }
   }, [isCancelSuccess]);
-
-  console.log("Events:", JSON.stringify(eventsResponse?.data.events, null, 2));
 
   const events = eventsResponse?.data.events;
   const totalCount = eventsResponse?.data.events.length;
@@ -80,7 +83,6 @@ const MyEventsScreen = () => {
   const openBottomSheet = (event: Event) => {
     setSelectedEvent(event);
     bottomSheetRef.current?.snapToIndex(0);
-    console.log(event);
   };
 
   const handleRefresh = async () => {
@@ -96,7 +98,7 @@ const MyEventsScreen = () => {
 
   const handleManageRequests = (event: Event) => {
     navigation.navigate("EventRequestsScreen", {
-      eventId: event?.id,
+      event,
     });
   };
 
@@ -222,40 +224,53 @@ const MyEventsScreen = () => {
             style={{
               flexDirection: "row",
               alignItems: "center",
-              justifyContent: "space-between",
+              gap: 2,
               marginTop: 2,
             }}
           >
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Ionicons
-                name="people-outline"
-                size={16}
-                color="#888"
-                style={{ marginRight: 4 }}
-              />
-              <CustomText style={styles.cardAttendees} fontWeight="300">
-                {item.attendeeCount}
-              </CustomText>
-            </View>
-
-            {pendingRequestsCount > 0 && (
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Ionicons
-                  name="mail-unread-outline"
-                  size={16}
-                  color="#56e269ff"
-                  style={{ marginRight: 4 }}
-                />
-                <CustomText
-                  style={[
-                    styles.cardAttendees,
-                    { color: "#10B981", fontWeight: "700" },
-                  ]}
-                >
-                  {pendingRequestsCount}
-                </CustomText>
+            <Ionicons
+              name="people-outline"
+              size={16}
+              color="#888"
+              style={{ marginRight: 4 }}
+            />
+            <CustomText style={styles.cardAttendees} fontWeight="300">
+              {item.attendeeCount}
+            </CustomText>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginTop: 2,
+              }}
+            >
+              <View
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  justifyContent: "flex-end",
+                }}
+              >
+                {pendingRequestsCount > 0 && (
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <Ionicons
+                      name="mail-unread-outline"
+                      size={16}
+                      color="#56e269ff"
+                      style={{ marginRight: 4 }}
+                    />
+                    <CustomText
+                      style={[
+                        styles.cardAttendees,
+                        { color: "#10B981", fontWeight: "700" },
+                      ]}
+                    >
+                      {pendingRequestsCount}
+                    </CustomText>
+                  </View>
+                )}
               </View>
-            )}
+            </View>
           </View>
         </View>
         {/* 3-dot menu */}
