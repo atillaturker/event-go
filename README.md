@@ -19,7 +19,7 @@
 </p>
 
 <h4 align="center"> 
-	Status: Finished
+  Status: Finished
 </h4>
 
 <p align="center">
@@ -33,7 +33,7 @@
 
 ## About
 
-A mobile application built with **React Native (Expo)** that lets users discover, create, and manage local events. Users can explore nearby events via interactive maps, RSVP to events, and manage their participation. Organizers can create and manage their own events and handle attendance requests.
+📱 A mobile application built with **React Native (Expo)** that lets users 🌎 discover and 🎟️ register for local events — including 🎶 concerts, 🎭 theater performances, 🎓 seminars, 🏆 sporting events, and more — and easily manage their participation, all based on their 📍 location.
 
 ---
 
@@ -68,7 +68,8 @@ A mobile application built with **React Native (Expo)** that lets users discover
   </p>
 </details>
 
-<h2 id="features">🚀 Features</h2>  
+<h2 id="features">🚀 Features</h2>
+
 - **🔍 Discover Events**: Discover nearby events on an interactive map and view detailed information (date, location, description, organizer).
 - **🧾 Event Details**: View event details (date, location, description, organizer)
 - **👩‍💼 Role-Based Access**: Separate functionalities for `USER` and `ORGANIZER` roles.
@@ -78,8 +79,10 @@ A mobile application built with **React Native (Expo)** that lets users discover
 - **🔔 Real-time Notifications**: Receive notifications for event updates, attendance requests, and approvals.
 - **🪶 Modern UI**: A clean and modern user interface built with React Native.
 
-<h2 id="tech-stack">🛠️ Tech Stack</h2>  
+<h2 id="tech-stack">🛠️ Tech Stack</h2>
+
 **Frontend:**
+
 - React Native (Expo)
 - **State Management:** Redux Toolkit & RTK Query
 - **Navigation:** React Navigation
@@ -92,7 +95,8 @@ A mobile application built with **React Native (Expo)** that lets users discover
 - **Authentication:** JWT (JSON Web Tokens)
 - **APIs:** RESTful API for event data, authentication, and notifications.
 
-<h2 id="setup-and-installation">⚙️ Setup and Installation</h2> 
+<h2 id="setup-and-installation">⚙️ Setup and Installation</h2>
+
 The project is divided into two main parts: `EventGO App/` (the frontend) and `EventGO Backend/` (the backend).
 
 ### Backend Setup
