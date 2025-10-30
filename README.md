@@ -1,5 +1,5 @@
 <h1 align="center">
-    <img alt="project" title="#About" src="./docs/banner.jpg" />
+    <img alt="project" title="#About" src="./docs/banner.png" />
 </h1>
 
 <h1 align="center">
@@ -32,6 +32,7 @@
 </p>
 
 ## About
+
 A mobile application built with **React Native (Expo)** that lets users discover, create, and manage local events. Users can explore nearby events via interactive maps, RSVP to events, and manage their participation. Organizers can create and manage their own events and handle attendance requests.
 
 ---
@@ -46,7 +47,7 @@ A mobile application built with **React Native (Expo)** that lets users discover
   | :---: | :---: | :---: |
   | <img src="./docs/user-screens/user-joined-events.png" alt="user-joined-events" width="250"/> | <img src="./docs/organizer-screens/organizer-attendance-requests.png" alt="organizer-attendance-requests" width="250"/> | <img src="./docs/common-screens/homepage.png" alt="homescreen" width="250"/> |
   | <img src="./docs/user-screens/user-pending-events.png" alt="user-pending-events" width="250"/> | <img src="./docs/organizer-screens/organizer-attendance-approved.png" alt="organizer-attendance-approved" width="250"/> | <img src="./docs/common-screens/login-screen.png" alt="login-screen" width="250"/> |
-  | <img src="./docs/user-screens/user-calendar.png" alt="user-calendar" width="250"/> | <img src="./docs/common-screens/organizer-create-event.png" alt="organizer-create-event" width="250"/> | <img src="./docs/common-screens/register-screen.png" alt="register-screen" width="250"/> |
+  | <img src="./docs/user-screens/user-calendar.png" alt="user-calendar" width="250"/> | <img src="./docs/organizer-screens/organizer-create-event.png" alt="organizer-create-event" width="250"/> | <img src="./docs/common-screens/register-screen.png" alt="register-screen" width="250"/> |
   | <img src="./docs/user-screens/user-join-event.png" alt="user-join-event" width="250"/> | <img src="./docs/organizer-screens/organizer-manage-events.png" alt="organizer-manage-events" width="250"/> | <img src="./docs/common-screens/homescreen.png" alt="homescreen" width="250"/> |
   | <img src="./docs/user-screens/user-successfully-request-event.png" alt="user-successfully-request-event" width="250"/> | <img src="./docs/organizer-screens/organizer-manage-events-2.png" alt="organizer-manage-events-2" width="250"/> | <img src="./docs/common-screens/homescreen2.png" alt="homescreen2" width="250"/> |
   | <img src="./docs/user-screens/user-notifications.png" alt="user-notifications" width="250"/> | <img src="./docs/organizer-screens/organizer-notifications.png" alt="organizer-notifications" width="250"/> | <img src="./docs/common-screens/event-filter-food-drink.png" alt="event-filter-food-drink" width="250"/> |
@@ -57,9 +58,13 @@ A mobile application built with **React Native (Expo)** that lets users discover
   <summary><strong>🎬 Click to see application GIFs</strong></summary>
   <br>
   
+  
   <p align="center">
-    <img src="./docs/demo1.gif" alt="Demo 1" width="300"/>
-    <img src="./docs/demo2.gif" alt="Demo 2" width="300"/>
+    <img src="./docs/gifs/organizer-create-event.gif" alt="Organizer Create Event" width="300"/>
+    <img src="./docs/gifs/organizer-event-cancel.gif" alt="Organizer Event Cancel" width="300"/>
+    <img src="./docs/gifs/.gif" alt="Demo 2" width="300"/>
+    <img src="./docs/gifs/user-gif1.gif.gif" alt="User Gif 1" width="300"/>
+    <img src="./docs/gifs/user-gif2.gif.gif" alt="User Gif 2" width="300"/>
   </p>
 </details>
 
@@ -81,6 +86,7 @@ A mobile application built with **React Native (Expo)** that lets users discover
 - **UI:** React Native components, `react-native-maps`
 
 **Backend:**
+
 - Node.js & Express
 - **Database:** MongoDB with Prisma ORM
 - **Authentication:** JWT (JSON Web Tokens)
@@ -90,6 +96,7 @@ A mobile application built with **React Native (Expo)** that lets users discover
 The project is divided into two main parts: `EventGO App/` (the frontend) and `EventGO Backend/` (the backend).
 
 ### Backend Setup
+
 1.  Navigate to the backend directory:
     ```sh
     cd "EventGO Backend"
@@ -109,6 +116,7 @@ The project is divided into two main parts: `EventGO App/` (the frontend) and `E
     ```
 
 ### Frontend Setup
+
 1.  Navigate to the frontend directory:
     ```sh
     cd "EventGO App"
@@ -125,4 +133,5 @@ The project is divided into two main parts: `EventGO App/` (the frontend) and `E
 5.  Scan the QR code with the Expo Go app on your mobile device.
 
 ## Author
+
 [![Linkedin Badge](https://img.shields.io/badge/-Atilla%20TÜRKER-blue?style=flat-square&logo=Linkedin&logoColor=white&link=https://www.linkedin.com/in/atillaturker/)](https://www.linkedin.com/in/atillaturker/)
