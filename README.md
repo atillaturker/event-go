@@ -62,9 +62,9 @@ A mobile application built with **React Native (Expo)** that lets users discover
   <p align="center">
     <img src="./docs/gifs/organizer-create-event.gif" alt="Organizer Create Event" width="300"/>
     <img src="./docs/gifs/organizer-event-cancel.gif" alt="Organizer Event Cancel" width="300"/>
-    <img src="./docs/gifs/.gif" alt="Demo 2" width="300"/>
-    <img src="./docs/gifs/user-gif1.gif.gif" alt="User Gif 1" width="300"/>
-    <img src="./docs/gifs/user-gif2.gif.gif" alt="User Gif 2" width="300"/>
+    <img src="./docs/gifs/organizer1.gif" alt="Organier Gif" width="300"/>
+    <img src="./docs/gifs/user-gif1.gif" alt="User Gif 1" width="300"/>
+    <img src="./docs/gifs/user-gif2.gif" alt="User Gif 2" width="300"/>
   </p>
 </details>
 
