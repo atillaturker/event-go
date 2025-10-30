@@ -83,17 +83,45 @@
 
 **Frontend:**
 
-- React Native (Expo)
-- **State Management:** Redux Toolkit & RTK Query
-- **Navigation:** React Navigation
-- **UI:** React Native components, `react-native-maps`
+- **Core Framework**: React Native & Expo
+- **Language**: TypeScript
+- **State Management**:
+  - **Redux Toolkit**: For managing global application state, particularly user authentication.
+  - **RTK Query**: For efficient data fetching, caching, and managing server state.
+- **Navigation**:
+  - **React Navigation**: For handling navigation between screens, including stack and bottom tab navigators.
+- **UI & Components**:
+  - **React Native Components**: Core UI elements.
+  - **`react-native-maps`**: To display interactive maps for event locations.
+  - **`react-native-calendars`**: For the calendar view in the "My Events" section.
+  - **`@gorhom/bottom-sheet`**: For creating interactive bottom sheet menus.
+  - **`@expo/vector-icons`**: For a rich set of icons used throughout the app.
+- **Forms**:
+  - **React Hook Form**: For robust and performant form state management.
+  - **Zod**: For schema-based form validation.
+- **Authentication & Storage**:
+  - **`expo-secure-store`**: For securely storing the JWT authentication token on the device.
+  - **`jwt-decode`**: For decoding JWT tokens on the client side.
+- **Fonts**:
+  - **`@expo-google-fonts/plus-jakarta-sans`**: For custom font styling.
 
-**Backend:**
+### Backend
 
-- Node.js & Express
-- **Database:** MongoDB with Prisma ORM
-- **Authentication:** JWT (JSON Web Tokens)
-- **APIs:** RESTful API for event data, authentication, and notifications.
+- **Core Framework**: Node.js & Express.js
+- **Language**: TypeScript
+- **Database & ORM**:
+  - **MongoDB**: As the primary NoSQL database.
+  - **Prisma**: As the ORM for type-safe database access and schema management.
+- **Authentication**:
+  - **JSON Web Tokens (JWT)**: For securing API endpoints and managing user sessions.
+  - **`bcryptjs`**: For hashing user passwords before storing them.
+- **API**:
+  - **RESTful API**: Architecture for client-server communication.
+- **Scheduled Jobs**:
+  - **`node-cron`**: For running scheduled tasks, such as updating event statuses.
+- **Middleware**:
+  - **`cors`**: To enable Cross-Origin Resource Sharing.
+  - Custom middleware for token authentication and role-based access control (`USER` vs. `ORGANIZER`).
 
 <h2 id="setup-and-installation">⚙️ Setup and Installation</h2>
 
